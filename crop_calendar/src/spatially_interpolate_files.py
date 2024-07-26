@@ -9,10 +9,11 @@ import skgstat as skg
 
 sys.path.append('..')
 
-import utils
+import rsutils.utils as utils
+import rsutils.rich_data_filter as rich_data_filter
+import rsutils.modify_bands as modify_bands
+
 import presets
-import rich_data_filter
-import modify_bands
 
 
 ATTRIBUTE_COL = 'attribute'
