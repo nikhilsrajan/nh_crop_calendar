@@ -569,7 +569,7 @@ def raw_spatially_interpolate_files(
 def spatially_interpolate_files(
     roi_geom_filepath:str,
     ref_tif_filepath:str,
-    folderpath:str,
+    attribute_folderpath:str,
     attribute:str,
     nodata,
     cropmask_tif_filepath:str,
@@ -622,7 +622,7 @@ def spatially_interpolate_files(
     )
 
     catalogue_df = create_catalogue_df(
-        folderpath=folderpath,
+        folderpath=attribute_folderpath,
         filename_parser = presets.PARSERS[attribute],
         keep_extensions=['.tif'],
     )
