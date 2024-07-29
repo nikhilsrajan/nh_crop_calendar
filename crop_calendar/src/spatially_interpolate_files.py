@@ -6,8 +6,7 @@ import geopandas as gpd
 import tqdm
 import rasterio
 import skgstat as skg
-
-sys.path.append('..')
+import affine
 
 import rsutils.utils as utils
 import rsutils.rich_data_filter as rich_data_filter
@@ -18,6 +17,8 @@ import presets
 
 ATTRIBUTE_COL = 'attribute'
 TIF_FILEPATH_COL = 'tif_filepath'
+IS_CORRUPTED_COL = 'is_corrupted'
+TYPE_OF_CORRUPTION_COL = 'type_of_corruption'
 
 
 def create_catalogue_df(
@@ -25,6 +26,7 @@ def create_catalogue_df(
     filename_parser, 
     ignore_extensions:list[str] = None,
     keep_extensions:list[str]=['.tif'],
+    tif_filepath_col:str = TIF_FILEPATH_COL
 ):
     data = {TIF_FILEPATH_COL: []}
     for filepath in utils.get_all_files_in_folder(
@@ -32,7 +34,7 @@ def create_catalogue_df(
         ignore_extensions=ignore_extensions,
         keep_extensions=keep_extensions,
     ):
-        data[TIF_FILEPATH_COL].append(filepath)
+        data[tif_filepath_col].append(filepath)
         filename = os.path.split(filepath)[1]
         parsed = filename_parser(filename=filename)
         for key, value in parsed.items():
@@ -43,12 +45,48 @@ def create_catalogue_df(
     return catalogue_df
 
 
+def check_if_corrupted(tif_filepath):
+    is_corrupted = False
+    type_of_corruption = None
+
+    CORRUPTED_UNOPENABLE = 'UNOPENABLE'
+    CORRUPTED_INVALID_TRANSFORM = 'INVALID_TRANSFORM'
+
+    INVALID_TRANSFORM = affine.Affine(1.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+
+    try:
+        with rasterio.open(tif_filepath) as src:
+            out_meta = src.meta.copy()
+        if out_meta['transform'] == INVALID_TRANSFORM:
+            is_corrupted = True
+            type_of_corruption = CORRUPTED_INVALID_TRANSFORM
+    except rasterio.RasterioIOError:
+        is_corrupted = True
+        type_of_corruption = CORRUPTED_UNOPENABLE
+    
+    return is_corrupted, type_of_corruption
+
+
+def add_tif_corruption_cols(
+    row, 
+    tif_filepath_col:str = TIF_FILEPATH_COL,
+    is_corrupted_col:str = IS_CORRUPTED_COL,
+    type_of_corruption_col:str = TYPE_OF_CORRUPTION_COL,
+):
+    is_corrupted, type_of_corruption = check_if_corrupted(row[tif_filepath_col])
+    row[is_corrupted_col] = is_corrupted
+    row[type_of_corruption_col] = type_of_corruption
+    return row
+
+
+
 def get_cropped_shapes(
     catalogue_df:pd.DataFrame,
     bounds_gdf:gpd.GeoDataFrame,
+    tif_filepath_col:str = TIF_FILEPATH_COL
 ):
     shapes = set()
-    for filepath in catalogue_df[TIF_FILEPATH_COL]:
+    for filepath in catalogue_df[tif_filepath_col]:
         if filepath is None:
             continue
         out_image, out_meta = utils.crop_tif(
@@ -61,10 +99,13 @@ def get_cropped_shapes(
     return list(shapes)
 
 
-def get_all_shapes(catalogue_df:pd.DataFrame):
+def get_all_shapes(
+    catalogue_df:pd.DataFrame,
+    tif_filepath_col:str = TIF_FILEPATH_COL,
+):
     shapes = set()
     for index, row in catalogue_df.iterrows():
-        with rasterio.open(row[TIF_FILEPATH_COL]) as src:
+        with rasterio.open(row[tif_filepath_col]) as src:
             shapes.add(src.read().shape)
     return list(shapes)
 
@@ -74,6 +115,7 @@ def create_stack(
     nodata,
     bounds_gdf:gpd.GeoDataFrame = None,
     crop_and_read:bool = False,
+    tif_filepath_col:str = TIF_FILEPATH_COL,
 ):
     if crop_and_read and bounds_gdf is None:
         raise ValueError(f'bounds_gdf can not be None when crop_and_read is True.')
@@ -98,7 +140,7 @@ def create_stack(
 
     year_day_filepath = dict(zip(
         zip(catalogue_df[presets.YEAR], catalogue_df[presets.DAY]),
-        catalogue_df[TIF_FILEPATH_COL]
+        catalogue_df[tif_filepath_col]
     ))
 
     stack = []
@@ -593,6 +635,8 @@ def spatially_interpolate_files(
     max_points:int = 15,
     mode:str = 'exact',
     shift:float = 0.5,
+    tif_filepath_col:str = TIF_FILEPATH_COL,
+    attribute_col:str = ATTRIBUTE_COL,
 ):  
     if attribute not in presets.VALID_PARSER_KEYS:
         raise ValueError(
@@ -643,16 +687,16 @@ def spatially_interpolate_files(
         rich_data_max_max_continuous_unavailable_data = rich_data_max_max_continuous_unavailable_data,
         out_folderpath = t_interp_folderpath,
         attribute = attribute,
-        tif_filepath_col = TIF_FILEPATH_COL,
-        attribute_col = ATTRIBUTE_COL,
+        tif_filepath_col = tif_filepath_col,
+        attribute_col = attribute_col,
         overwrite = overwrite_t_interp,
     )
 
     print('Spatially interpolating from cropmask to interpmask')
     st_interp_catalogue_df = raw_spatially_interpolate_files(
         catalogue_df = t_interp_catalogue_df,
-        tif_filepath_col = TIF_FILEPATH_COL,
-        attribute_col = ATTRIBUTE_COL,
+        tif_filepath_col = tif_filepath_col,
+        attribute_col = attribute_col,
         out_folderpath = st_interp_folderpath,
         cropmask_tif_filepath = cropmask_tif_filepath,
         interpmask_tif_filepath = interp_tif_filepath,
@@ -683,8 +727,8 @@ def spatially_interpolate_files(
         rich_data_max_max_continuous_unavailable_data = rich_data_max_max_continuous_unavailable_data,
         out_folderpath = tst_interp_folderpath,
         attribute = attribute,
-        tif_filepath_col = TIF_FILEPATH_COL,
-        attribute_col = ATTRIBUTE_COL,
+        tif_filepath_col = tif_filepath_col,
+        attribute_col = attribute_col,
         overwrite = overwrite_tst_interp,
     )
 
