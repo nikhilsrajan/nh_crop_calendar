@@ -3,6 +3,25 @@
 YEAR = 'year'
 DAY = 'day'
 
+# attributes must not have '_' character
+# This restriction is placed because of the file name convention
+# f'{attribute}_{year}_{day}.tif' used in spatially_interpolate_files.py
+ATTR_NDVI = 'ndvi'
+ATTR_NSIDC = 'nsidc'
+ATTR_CHIRPS = 'chirps'
+ATTR_ESI4WK = 'esi-4wk'
+ATTR_CPCTMAX = 'cpc-tmax'
+ATTR_CPCTMIN = 'cpc-tmin'
+ATTR_NDVI_INTERP = 'ndvi-interp'
+
+
+def interp_filename_parser(filename:str):
+    _, year, day = filename.split('.')[0].split('_')
+    return {
+        YEAR: int(year),
+        DAY: int(day),
+    }
+
 
 def ndvi_filename_parser(filename:str):
     _, _, _, _, year, day, _, _, _ = filename.split('.')
@@ -59,26 +78,27 @@ def ndvi_denormalise(x):
 
 
 PARSERS = {
-    'ndvi' : ndvi_filename_parser,
-    'nsidc' :  soilmoisture_filename_parser,
-    'chirps' : chirps_filename_parser,
-    'esi_4wk' : esi4wk_filename_parser,
-    'cpc_tmax' : cpc_filename_parser,
-    'cpc_tmin' : cpc_filename_parser,
+    ATTR_NDVI : ndvi_filename_parser,
+    ATTR_NSIDC : soilmoisture_filename_parser,
+    ATTR_CHIRPS : chirps_filename_parser,
+    ATTR_ESI4WK : esi4wk_filename_parser,
+    ATTR_CPCTMAX : cpc_filename_parser,
+    ATTR_CPCTMIN : cpc_filename_parser,
+    ATTR_NDVI_INTERP : interp_filename_parser,
 }
 
 VALID_PARSER_KEYS = list(PARSERS.keys())
 
 
 NORMALISERS = {
-    'ndvi': ndvi_normalise
+    ATTR_NDVI: ndvi_normalise
 }
 
 VALID_NORMALISER_KEYS = list(NORMALISERS.keys())
 
 
 DENORMALISERS = {
-    'ndvi': ndvi_denormalise
+    ATTR_NDVI: ndvi_denormalise
 }
 
 VALID_DENORMALISER_KEYS = list(DENORMALISERS.keys())
