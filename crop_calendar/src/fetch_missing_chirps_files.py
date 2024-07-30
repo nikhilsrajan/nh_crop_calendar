@@ -19,8 +19,7 @@ TIF_GZ_EXT = '.tif.gz'
 
 
 def fetch_missing_chirps_v2p0_p05_files(
-    startdate:datetime.datetime,
-    enddate:datetime.datetime,
+    years:list[int],
     geoglam_chirps_data_folderpath:str,
     chc_chirp_v2_0_p05_download_folderpath:str,
     njobs:int = 8,
@@ -39,16 +38,14 @@ def fetch_missing_chirps_v2p0_p05_files(
         by=[presets.YEAR, presets.DAY]
     ).reset_index(drop=True)
 
+    chirps_downloaded_catalogue_df = \
+    chirps_downloaded_catalogue_df[chirps_downloaded_catalogue_df[presets.YEAR].isin(years)]
+
     chirps_downloaded_catalogue_df[DATE_COL] = chirps_downloaded_catalogue_df.apply(
         lambda row: datetime.datetime(year=row[presets.YEAR], month=1, day=1) \
             + datetime.timedelta(days=row[presets.DAY] - 1),
         axis=1
     )
-
-    chirps_downloaded_catalogue_df = chirps_downloaded_catalogue_df[
-        (chirps_downloaded_catalogue_df[DATE_COL] >= startdate)
-        & (chirps_downloaded_catalogue_df[DATE_COL] <= enddate)
-    ]
 
     print('Checking how many files in the local CHIRPS catalogue are corrupted.')
     chirps_downloaded_catalogue_df = \
@@ -57,12 +54,18 @@ def fetch_missing_chirps_v2p0_p05_files(
     chirps_downloaded_catalogue_df[FILETYPE_COL] = TIF_EXT
     print(f'Number of corrupted tifs: {n_corrupted}')
 
-    print(f"Querying CHC for p05 CHIRPS files for daterange {startdate.strftime('%Y-%m-%d')} to {enddate.strftime('%Y-%m-%d')}")
-    chc_fetch_paths_df = chcfetch.query_chirps_v2_global_daily(
-        product = chcfetch.Products.CHIRPS.P05,
-        startdate = startdate,
-        enddate = enddate,
-    )
+    print(f"Querying CHC for p05 CHIRPS files for years={years}")
+    chc_fetch_paths_dfs = []
+    for _year in tqdm.tqdm(years):
+        _res_df = chcfetch.query_chirps_v2_global_daily(
+            product = chcfetch.Products.CHIRPS.P05,
+            startdate = datetime.datetime(_year, 1, 1),
+            enddate = datetime.datetime(_year, 12, 31),
+            show_progress = False,
+        )
+        chc_fetch_paths_dfs.append(_res_df)
+        del _res_df
+    chc_fetch_paths_df = pd.concat(chc_fetch_paths_dfs).reset_index(drop=True)
 
     valid_downloads_df = chirps_downloaded_catalogue_df[~chirps_downloaded_catalogue_df[sif.IS_CORRUPTED_COL]]
 
