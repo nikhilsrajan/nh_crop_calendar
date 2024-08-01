@@ -2,12 +2,8 @@ pandas
 seaborn
 scipy
 tqdm
-netCDF4
 geopandas
 rasterio
 s2
 scikit-learn
 scikit-gstat
-snakemake
-pulp==2.7.0  # For snakemake. Solution from: https://github.com/snakemake/snakemake/issues/2607#issuecomment-1929118297
-click

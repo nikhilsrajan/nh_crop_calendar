@@ -1,6 +1,6 @@
 [submodule "crop_calendar/src/chcfetch"]
-	path = crop_calendar/src/chcfetch
+	path = crop_calendar/chcfetch
 	url = https://github.com/nikhilsrajan/chcfetch.git
 [submodule "crop_calendar/src/rsutils"]
-	path = crop_calendar/src/rsutils
+	path = crop_calendar/rsutils
 	url = https://github.com/nikhilsrajan/rsutils.git
