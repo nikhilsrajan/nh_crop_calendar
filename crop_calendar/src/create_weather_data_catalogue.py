@@ -33,7 +33,7 @@ def generate_catalogue_df(
         folderpath = attribute_folderpath,
         filename_parser = presets.PARSERS[attribute],
         keep_extensions = ['.tif'],
-        tif_filepath_col = sif.TIF_FILEPATH_COL,
+        tif_filepath_col = tif_filepath_col,
     )
 
     attribute_catalogue_df[ATTRIBUTE_COL] = attribute
@@ -88,7 +88,13 @@ def fetch_missing_chirps_v2p0_p05_files(
 
     print('Checking how many files in the local CHIRPS catalogue are corrupted.')
     chirps_downloaded_catalogue_df = \
-    chirps_downloaded_catalogue_df.progress_apply(sif.add_tif_corruption_cols, axis=1)
+    chirps_downloaded_catalogue_df.progress_apply(
+        lambda row: sif.add_tif_corruption_cols(
+            row=row, 
+            tif_filepath_col=tif_filepath_col,
+        ), 
+        axis=1,
+    )
     n_corrupted = chirps_downloaded_catalogue_df[sif.IS_CORRUPTED_COL].sum()
     print(f'Number of corrupted tifs: {n_corrupted}')
 
@@ -185,7 +191,7 @@ def create_weather_data_catalogue_df(
         weather_data_catalogue_dfs.append(_catalogue_df)
         del _catalogue_df
     
-    weather_data_catalogue_df = pd.concat(weather_data_catalogue_dfs)
+    weather_data_catalogue_df = pd.concat(weather_data_catalogue_dfs).reset_index(drop=True)
     del weather_data_catalogue_dfs
 
     return weather_data_catalogue_df

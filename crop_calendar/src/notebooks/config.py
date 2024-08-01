@@ -40,3 +40,8 @@ BINARY_MASK_SETTINGS = {
         'how': 'gt',
     }
 }
+
+
+## aggregate tif to df
+FOLDERPATH_CSVS = os.path.join(FOLDERPATH_OUTPUTS, 'csvs')
+FOLDERPATH_AGGREGRATE_DFS = os.path.join(FOLDERPATH_OUTPUTS, 'aggregated_dfs')
