@@ -30,3 +30,6 @@ FOLDERPATH_MASKS = os.path.join(FOLDERPATH_OUTPUTS, 'masks')
 # aggregate tif to df
 FOLDERPATH_CSVS = os.path.join(FOLDERPATH_OUTPUTS, 'csvs')
 FOLDERPATH_AGGREGRATE_DFS = os.path.join(FOLDERPATH_OUTPUTS, 'aggregated_dfs')
+
+# clustered plots
+FOLDERPATH_PLOTS = os.path.join(FOLDERPATH_OUTPUTS, 'plots')

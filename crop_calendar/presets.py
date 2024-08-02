@@ -91,14 +91,16 @@ VALID_PARSER_KEYS = list(PARSERS.keys())
 
 
 NORMALISERS = {
-    ATTR_NDVI: ndvi_normalise
+    ATTR_NDVI: ndvi_normalise,
+    ATTR_NDVI_INTERP: ndvi_normalise,
 }
 
 VALID_NORMALISER_KEYS = list(NORMALISERS.keys())
 
 
 DENORMALISERS = {
-    ATTR_NDVI: ndvi_denormalise
+    ATTR_NDVI: ndvi_denormalise,
+    ATTR_NDVI_INTERP: ndvi_denormalise,
 }
 
 VALID_DENORMALISER_KEYS = list(DENORMALISERS.keys())

@@ -1,12 +1,12 @@
 import pandas as pd
 import os
-import sys
 import numpy as np
 import geopandas as gpd
 import tqdm
 import rasterio
 import skgstat as skg
 import affine
+import sklearn.cluster
 
 import rsutils.utils as utils
 import rsutils.rich_data_filter as rich_data_filter
@@ -720,7 +720,7 @@ def spatially_interpolate_files(
         crop_and_read = False,
         bounds_gdf = None,
         nodata = nodata,
-        cropmask = cropmask,
+        cropmask = interp,
         lower_cap = lower_cap,
         upper_cap = upper_cap,
         rich_data_min_total_data = rich_data_min_total_data,
@@ -732,7 +732,130 @@ def spatially_interpolate_files(
         overwrite = overwrite_tst_interp,
     )
 
-    return tst_interp_catalogue_df
+    return t_interp_catalogue_df, st_interp_catalogue_df, tst_interp_catalogue_df
+
+
+def get_kmeans_cluster_ids(
+    timeseries:np.ndarray, 
+    n_clusters:int, 
+    random_state:int=42,
+):
+    n_samples, n_features = timeseries.shape # just to check the dimensions
+    cluster_ids = sklearn.cluster.MiniBatchKMeans(
+        n_clusters=n_clusters,
+        random_state=random_state,
+    ).fit(timeseries).labels_
+    return cluster_ids
+
+
+def relabel_clusters_by_count(cluster_ids:np.ndarray):
+    _ids, _counts = np.unique(cluster_ids, return_counts=True)
+    cluster_count_df = pd.DataFrame(data={
+        'cluster_id': _ids,
+        'count': _counts
+    })
+    cluster_count_df = cluster_count_df.sort_values(by='count', ascending=False)
+    cluster_count_df['new_cluster_id'] = range(_ids.shape[0])
+    new_cluster_id_map = dict(zip(
+        cluster_count_df['cluster_id'],
+        cluster_count_df['new_cluster_id'],
+    ))
+    new_cluster_ids = np.zeros(shape=cluster_ids.shape)
+    for old_id, new_id in new_cluster_id_map.items():
+        new_cluster_ids[cluster_ids == old_id] = new_id
+    return new_cluster_ids.astype(int)
+
+
+def plot_timeseries_and_clustered_tif(
+    data_stack:np.ndarray,
+    metadata:dict,
+    nodata,
+    attribute:str,
+    filename_prefix:str,
+    cropname:str,
+    y_label:str,   
+    plots_folderpath:str,
+    y_min=-0.2,
+    y_max=1,
+    x_label:str = 'days',
+    normalise:bool=True,
+    n_clusters:int = 25,
+    nrows:int = 5,
+    ncols:int = 5,
+    cluster_id_to_color_map:dict = {
+        0: '#30123b', 1: '#3b3184', 2: '#434fbc', 3: '#466be3', 4: '#4686fb',
+        5: '#3aa1fd', 6: '#28bceb', 7: '#1ad4d1', 8: '#1ae5b6', 9: '#32f298',
+        10: '#58fb74', 11: '#81ff52', 12: '#a4fc3c', 13: '#c0f434', 14: '#dae436',
+        15: '#eecf3a', 16: '#fbb938', 17: '#fe9d2e', 18: '#fb7e21', 19: '#f25e13',
+        20: '#e4440a', 21: '#d02f05', 22: '#b81d02', 23: '#9a0e01', 24: '#7a0403',
+    },
+    aspect_ratio:float = 1,
+):
+    year_indices = dict(zip(
+        metadata['years'],
+        range(len(metadata['years'])),
+    ))
+    days = metadata['days']
+    out_meta = metadata['geotiff_metadata']
+
+    for year, year_index in year_indices.items():
+        selected_year_data_stack = data_stack[year_index]
+
+        if np.isnan(nodata):
+            valid_xs, valid_ys = np.where(~np.isnan(selected_year_data_stack).all(axis=0))
+        else:
+            valid_xs, valid_ys = np.where(~(selected_year_data_stack == nodata).all(axis=0))
+
+        data_timeseries = selected_year_data_stack[:, valid_xs, valid_ys].T
+
+        if normalise:
+            normaliser = presets.NORMALISERS[attribute]
+            data_timeseries = normaliser(data_timeseries)
+
+        cluster_ids = get_kmeans_cluster_ids(
+            timeseries=data_timeseries,
+            n_clusters=n_clusters,
+        )
+
+        cluster_ids = relabel_clusters_by_count(cluster_ids=cluster_ids)
+
+        filename = f'{filename_prefix}{year}'
+
+        os.makedirs(plots_folderpath, exist_ok=True)
+
+        # generate plot
+        utils.plot_clustered_lineplots(
+            crop_name=f'{cropname} {year}',
+            band_name=y_label,
+            timeseries=data_timeseries,
+            x=days,
+            cluster_ids=cluster_ids,
+            save_filepath=os.path.join(plots_folderpath, f'{filename}.png'),
+            nrows=nrows,
+            ncols=ncols,
+            y_min=y_min,
+            y_max=y_max,
+            x_label=x_label,
+            aspect_ratio=aspect_ratio,
+            cluster_id_to_color_map=cluster_id_to_color_map,
+        )
+
+        # create tif
+        out_meta['count'] = 1
+
+        NODATA = 255 # fixed nodata for clusters
+
+        out_meta['nodata'] = NODATA
+
+        cluster_image = np.full(shape=(out_meta['height'], out_meta['width']), fill_value=NODATA)
+        cluster_image[valid_xs, valid_ys] = cluster_ids
+
+        with rasterio.open(os.path.join(plots_folderpath, f'{filename}.tif'), 'w', **out_meta) as dst:
+            dst.write(np.expand_dims(cluster_image, axis=0))
+        
+        del selected_year_data_stack, data_timeseries, cluster_ids
+
+    
 
 
 if __name__ == '__main__':
