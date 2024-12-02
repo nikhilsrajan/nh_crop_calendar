@@ -575,10 +575,7 @@ def raw_spatially_interpolate_files(
         
     args = []
 
-    for index, row in tqdm.tqdm(
-        catalogue_df.iterrows(),
-        total=catalogue_df.shape[0],
-    ):
+    for index, row in catalogue_df.iterrows():
         value_tif_filepath = row[tif_filepath_col]
         attribute = row[attribute_col]
         out_tif_filepath = utils.modify_filepath(
@@ -630,10 +627,10 @@ def raw_spatially_interpolate_files(
         data[tif_filepath_col].append(out_tif_filepath)
 
     with mp.Pool(njobs) as p:
-        tqdm.tqdm(
+        list(tqdm.tqdm(
             p.starmap(read_spatially_interpolate_write, args), 
             total=len(args)
-        )
+        ))
 
     out_catalogue_df = pd.DataFrame(data=data)
     
