@@ -6,6 +6,7 @@ import sys
 sys.path.append('..')
 
 import aggregate_tifs_to_df as at2d
+import create_weather_data_catalogue as cwdc
 
 
 if __name__ == '__main__':
@@ -31,6 +32,17 @@ if __name__ == '__main__':
     years = [int(year_str) for year_str in args.years.split(',')]
 
     weather_catalogue_df = pd.read_csv(args.weather_catalog)
+
+    weather_catalogue_df[at2d.METHOD_COL] \
+    = at2d.LoadTIFMethod.READ_AND_CROP
+    weather_catalogue_df.loc[
+        weather_catalogue_df[cwdc.FILETYPE_COL] == cwdc.TIF_GZ_EXT,
+        at2d.METHOD_COL
+    ] = at2d.LoadTIFMethod.COREGISTER_AND_CROP
+    weather_catalogue_df.loc[
+        weather_catalogue_df[cwdc.ATTRIBUTE_COL] == 'ndvi-interp', 
+        at2d.METHOD_COL
+    ] = at2d.LoadTIFMethod.READ_NO_CROP
 
     aggregated_df = at2d.aggregate_tifs_to_df(
         catalogue_df = weather_catalogue_df,
