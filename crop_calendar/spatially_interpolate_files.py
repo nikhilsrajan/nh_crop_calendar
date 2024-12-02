@@ -170,7 +170,7 @@ def create_stack(
     metadata = {
         'data_shape_desc': ('years', 'days', 'height', 'width'),
         'years': list(years),
-        'days': list(days),
+        'days': list(all_days),
         'geotiff_metadata': out_meta,
     }
 
