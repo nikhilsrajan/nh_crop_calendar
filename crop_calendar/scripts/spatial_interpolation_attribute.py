@@ -23,6 +23,8 @@ if __name__ == '__main__':
     rich_data_max_max_continuous_unavailable_data = 7
 
 
+    parser.add_argument('roi_filepath', help='/path/to/shapefile')
+    parser.add_argument('ref_tif_filepath', help='/path/to/reference_raster')
     parser.add_argument('cropmask_filepath', help='/path/to/cropmask')
     parser.add_argument('interpmask_filepath', help='/path/to/interpmask')
     parser.add_argument('years', help='comma separated years (YYYY). Example: 2019,2020,2018')
