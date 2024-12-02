@@ -1,12 +1,15 @@
 import os
 
 
-JOB_NAME = 'France'
+# JOB_NAME = 'France'
+JOB_NAME = 'south-east-africa'
 
 # paths
 FOLDERPATH_DATA = '../data'
 
-FILEPATH_ROI_SHAPE = os.path.join(FOLDERPATH_DATA, 'shapefiles/France_Regions.gpkg')
+# FILEPATH_ROI_SHAPE = os.path.join(FOLDERPATH_DATA, 'shapefiles/France_Regions.gpkg')
+FILEPATH_ROI_SHAPE = os.path.join(FOLDERPATH_DATA, 'shapefiles/bounds-2012-01-01-nc.geojson')
+
 
 FOLDERPATH_OUTPUTS = os.path.join(FOLDERPATH_DATA, f'outputs/{JOB_NAME}')
 

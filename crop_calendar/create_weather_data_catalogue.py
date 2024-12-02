@@ -48,8 +48,8 @@ def generate_catalogue_df(
     attribute_catalogue_df[attribute_catalogue_df[presets.YEAR].isin(years)]
 
     attribute_catalogue_df[DATE_COL] = attribute_catalogue_df.apply(
-        lambda row: datetime.datetime(year=row[presets.YEAR], month=1, day=1) \
-            + datetime.timedelta(days=row[presets.DAY] - 1),
+        lambda row: (datetime.datetime(year=row[presets.YEAR], month=1, day=1) \
+            + datetime.timedelta(days=row[presets.DAY] - 1)).strftime('%Y-%m-%d'),
         axis=1
     )
 
@@ -166,27 +166,13 @@ def create_weather_data_catalogue_df(
     for attribute, settings in tqdm.tqdm(attribute_settings_dict.items()):
         if settings.attribute_folderpath is None:
             raise ValueError(f'settings.attribute_folderpath for attribute={attribute} can not be None.')
-        
-        if attribute == 'chirps':
-            if settings.download_folderpath is None:
-                raise ValueError(f'settings.download_folderpath for attribute={attribute} can not be None.')
-            
-            _catalogue_df = fetch_missing_chirps_v2p0_p05_files(
-                years = years,
-                geoglam_chirps_data_folderpath = settings.attribute_folderpath,
-                chc_chirp_v2_0_p05_download_folderpath = settings.download_folderpath,
-                njobs = settings.njobs,
-                overwrite = settings.overwrite,
-                tif_filepath_col = tif_filepath_col,
-            )
 
-        else:
-            _catalogue_df = generate_catalogue_df(
-                attribute = attribute,
-                attribute_folderpath = settings.attribute_folderpath,
-                years = years,
-                tif_filepath_col = tif_filepath_col,
-            )
+        _catalogue_df = generate_catalogue_df(
+            attribute = attribute,
+            attribute_folderpath = settings.attribute_folderpath,
+            years = years,
+            tif_filepath_col = tif_filepath_col,
+        )
         
         weather_data_catalogue_dfs.append(_catalogue_df)
         del _catalogue_df

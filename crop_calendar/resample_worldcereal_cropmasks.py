@@ -37,7 +37,6 @@ def create_worldcereal_files_catalogue_df(
 ):
     worldcereal_tif_catalogue_data = {
         'aez': [],
-        'season': [],
         'product': [],
         'startdate': [],
         'enddate': [],
@@ -50,8 +49,17 @@ def create_worldcereal_files_catalogue_df(
         filename_wo_ext = filename[:-4]
         aez, season, product, startdate, enddate, ftype = filename_wo_ext.split('_')
         worldcereal_tif_catalogue_data['aez'].append(str(aez))
-        worldcereal_tif_catalogue_data['season'].append(season)
-        worldcereal_tif_catalogue_data['product'].append(product)
+        """
+        previously we saved season and product into different columns:
+        > worldcereal_tif_catalogue_data['season'].append(season)
+        > worldcereal_tif_catalogue_data['product'].append(product)
+
+        but for ease of coding, and avoiding the special cases where product repeats
+        for different seasons, the change is made for product column to be unique by
+        cancatenating season and product:
+        > worldcereal_tif_catalogue_data['product'].append(season + '_' + product)
+        """
+        worldcereal_tif_catalogue_data['product'].append(season + '_' + product)
         worldcereal_tif_catalogue_data['startdate'].append(datetime.datetime.strptime(startdate, '%Y-%m-%d'))
         worldcereal_tif_catalogue_data['enddate'].append(datetime.datetime.strptime(enddate, '%Y-%m-%d'))
         worldcereal_tif_catalogue_data['type'].append(ftype)
@@ -137,11 +145,10 @@ def _divide_each_aez_into_s2grids(
         worldcereal_tif_catalogue_df.iterrows(), 
         total=worldcereal_tif_catalogue_df.shape[0],
     ):
-        season = row['season']
         product = row['product']
         aez = row['aez']
 
-        print(product, season, aez)
+        print(product, aez)
 
         tif_filepath = row['filepath']
 
@@ -153,13 +160,12 @@ def _divide_each_aez_into_s2grids(
             overwrite=overwrite,
         )
 
-        s2_grid_cropped_tifs_dfs[(product, season, aez)] = cropped_tif_filepaths_df
+        s2_grid_cropped_tifs_dfs[(product, aez)] = cropped_tif_filepaths_df
 
     s2_grid_cropped_tifs_dfs_list = []
     for key, _df in s2_grid_cropped_tifs_dfs.items():
-        product, season, aez = key
+        product, aez = key
         _df['product'] = product
-        _df['season'] = season
         _df['aez'] = str(aez)
         s2_grid_cropped_tifs_dfs_list.append(_df.dropna())
     
@@ -446,10 +452,10 @@ def merge_s2grid_tifs_by_product(
 
 
 def inplace_coregister_with_cropped_ref_tif(
-    catalogue_df:pd.DataFrame,
-    tif_filepath_col:str,
+    tif_filepaths:list[str],
     bounds_gdf:gpd.GeoDataFrame,
     ref_tif_filepath:str,
+    new_folderpath:str = None,
 ):
     cropped_ref_ndarray, cropped_ref_meta = utils.crop_tif(
         src_filepath = ref_tif_filepath,
@@ -468,13 +474,22 @@ def inplace_coregister_with_cropped_ref_tif(
     with rasterio.open(zero_cropped_ref_tif_filepath, 'w', **cropped_ref_meta) as dst:
         dst.write(cropped_ref_ndarray)
 
-    for index, row in catalogue_df.iterrows():
-        tif_filepath = row[tif_filepath_col]
+    # for index, row in catalogue_df.iterrows():
+    #     tif_filepath = row[tif_filepath_col]
+    out_tif_filepaths = []
+    for tif_filepath in tif_filepaths:
+        out_tif_filepath = utils.modify_filepath(
+            filepath = tif_filepath,
+            new_folderpath = new_folderpath,
+        )
         utils.coregister(
             src_filepath = tif_filepath,
-            dst_filepath = tif_filepath,
+            dst_filepath = out_tif_filepath,
             reference_zero_filepath = zero_cropped_ref_tif_filepath,
         )
+        out_tif_filepaths.append(out_tif_filepath)
+    
+    return out_tif_filepaths
 
 
 def resample_worldcereal_cropmasks(
@@ -487,8 +502,7 @@ def resample_worldcereal_cropmasks(
     merged_product_folderpath:str,
     resampled_cropmasks_folderpath:str,
     output_folderpath:str,
-    products_to_merge:list[str],
-    merged_product_name:str,
+    merge_products_dict:dict[str,list[str]], # merged_product_name: products_to_merge
     out_products:list[str],
     s2_grid_res:int = 4,
     overwrite:bool = False,
@@ -508,7 +522,13 @@ def resample_worldcereal_cropmasks(
 
     aez_ids = get_aezs(aez_gdf=aez_gdf, bounds_gdf=bounds_gdf)
 
-    products_to_work_with = list((set(out_products) | set(products_to_merge)) - set([merged_product_name]))
+    _products_to_merge = []
+    _merged_product_names = []
+    for _merged_product_name, __products_to_merge in merge_products_dict.items():
+        _products_to_merge += __products_to_merge
+        _merged_product_names.append(_merged_product_name)
+
+    products_to_work_with = list((set(out_products) | set(_products_to_merge)) - set(_merged_product_names))
 
     worldcereal_tif_catalogue_df = create_worldcereal_files_catalogue_df(
         worldcereal_folderpath=worldcereal_folderpath,
@@ -534,14 +554,15 @@ def resample_worldcereal_cropmasks(
     )
 
     # merge list of products into single tif
-    print(f"Merging different product -- {products_to_merge} -> {merged_product_name}")
-    cropmask_tif_filepaths_df = merge_worldcereal_products(
-        cropmask_tif_filepaths_df = cropmask_tif_filepaths_df,
-        merged_product_folderpath = merged_product_folderpath,
-        products_to_merge = products_to_merge,
-        merged_product_name = merged_product_name,
-        overwrite = overwrite,
-    )
+    for merged_product_name, products_to_merge in merge_products_dict.items():
+        print(f"Merging different product -- {products_to_merge} -> {merged_product_name}")
+        cropmask_tif_filepaths_df = merge_worldcereal_products(
+            cropmask_tif_filepaths_df = cropmask_tif_filepaths_df,
+            merged_product_folderpath = merged_product_folderpath,
+            products_to_merge = products_to_merge,
+            merged_product_name = merged_product_name,
+            overwrite = overwrite,
+        )
 
     cropmask_tif_filepaths_df = cropmask_tif_filepaths_df[
         cropmask_tif_filepaths_df['product'].isin(out_products)
@@ -565,8 +586,7 @@ def resample_worldcereal_cropmasks(
 
     print(f"Co-register merged tifs with cropped ref_tif_filepath:")
     inplace_coregister_with_cropped_ref_tif(
-        catalogue_df = merged_cropmask_catalogue_df,
-        tif_filepath_col = 'tif_filepath',
+        tif_filepaths = merged_cropmask_catalogue_df['tif_filepath'],
         bounds_gdf = bounds_gdf,
         ref_tif_filepath = ref_tif_filepath,
     )
