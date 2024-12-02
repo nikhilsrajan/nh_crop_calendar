@@ -629,11 +629,11 @@ def raw_spatially_interpolate_files(
                 data[col].append(row[col])
         data[tif_filepath_col].append(out_tif_filepath)
 
-        with mp.Pool(njobs) as p:
-            tqdm.tqdm(
-                p.starmap_async(read_spatially_interpolate_write, args), 
-                total=len(args)
-            )
+    with mp.Pool(njobs) as p:
+        tqdm.tqdm(
+            p.starmap_async(read_spatially_interpolate_write, args), 
+            total=len(args)
+        )
 
     out_catalogue_df = pd.DataFrame(data=data)
     
