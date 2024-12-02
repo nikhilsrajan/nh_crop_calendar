@@ -631,7 +631,7 @@ def raw_spatially_interpolate_files(
 
     with mp.Pool(njobs) as p:
         tqdm.tqdm(
-            p.starmap_async(read_spatially_interpolate_write, args), 
+            p.starmap(read_spatially_interpolate_write, args), 
             total=len(args)
         )
 
