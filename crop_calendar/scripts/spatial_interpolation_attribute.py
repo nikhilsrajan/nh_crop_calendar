@@ -63,5 +63,5 @@ if __name__ == '__main__':
         overwrite_st_interp = args.overwrite_st_interp,
         tst_interp_folderpath = args.tst_interp_folderpath,
         overwrite_tst_interp = args.overwrite_tst_interp,
-        njobs = args.njobs,
+        njobs = int(args.njobs),
     )
