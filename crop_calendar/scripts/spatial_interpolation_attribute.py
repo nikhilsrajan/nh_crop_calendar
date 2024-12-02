@@ -36,7 +36,7 @@ if __name__ == '__main__':
     parser.add_argument('--overwrite-t-interp', action='store_true')
     parser.add_argument('--overwrite-st-interp', action='store_true')
     parser.add_argument('--overwrite-tst-interp', action='store_true')
-    parser.add_argument('-j', '--njobs', action='store_true', required=False, default=1)
+    parser.add_argument('-j', '--njobs', action='store', required=False, default=1)
 
     args = parser.parse_args()
 
