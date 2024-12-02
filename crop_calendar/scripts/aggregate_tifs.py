@@ -35,8 +35,8 @@ if __name__ == '__main__':
     aggregated_df = at2d.aggregate_tifs_to_df(
         catalogue_df = weather_catalogue_df,
         mask_tif_filepaths = [
-            args.cropmask,
-            args.interpmask,
+            args.cropmask_filepath,
+            args.interpmask_filepath,
         ],
         roi_geom_filepath = args.roi_filepath,
         ref_tif_filepath = args.ref_tif_filepath,
