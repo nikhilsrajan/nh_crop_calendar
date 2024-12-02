@@ -170,7 +170,7 @@ def create_stack(
     metadata = {
         'data_shape_desc': ('years', 'days', 'height', 'width'),
         'years': list(years),
-        'days': list(days),
+        'days': list(all_days),
         'geotiff_metadata': out_meta,
     }
 
@@ -290,8 +290,8 @@ def write_out_stack(
     years = metadata['years']
     days = metadata['days']
 
-    print(f"DEBUG: {metadata['days']}")
-    print(f"DEBUG: {metadata['days']}")
+    print(f"DEBUG: metadata['years'] = {metadata['years']}")
+    print(f"DEBUG: metadata['days'] = {metadata['days']}")
 
     out_meta = metadata['geotiff_metadata']
     
