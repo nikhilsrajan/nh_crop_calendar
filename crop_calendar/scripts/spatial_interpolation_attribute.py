@@ -36,6 +36,7 @@ if __name__ == '__main__':
     parser.add_argument('--overwrite-t-interp', action='store_true')
     parser.add_argument('--overwrite-st-interp', action='store_true')
     parser.add_argument('--overwrite-tst-interp', action='store_true')
+    parser.add_argument('-j', '--njobs', action='store_true', required=False, default=1)
 
     args = parser.parse_args()
 
@@ -62,4 +63,5 @@ if __name__ == '__main__':
         overwrite_st_interp = args.overwrite_st_interp,
         tst_interp_folderpath = args.tst_interp_folderpath,
         overwrite_tst_interp = args.overwrite_tst_interp,
+        njobs = args.njobs,
     )

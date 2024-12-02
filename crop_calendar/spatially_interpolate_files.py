@@ -7,6 +7,7 @@ import rasterio
 import skgstat as skg
 import affine
 import sklearn.cluster
+import multiprocessing as mp
 
 import rsutils.utils as utils
 import rsutils.rich_data_filter as rich_data_filter
@@ -566,10 +567,13 @@ def raw_spatially_interpolate_files(
     mask_nodata = 0,
     shift:float = 0.5,
     overwrite:bool = False,
+    njobs:int = 1,
 ):
     os.makedirs(out_folderpath, exist_ok=True)
 
     data = { col : [] for col in catalogue_df.columns }
+        
+    args = []
 
     for index, row in tqdm.tqdm(
         catalogue_df.iterrows(),
@@ -583,29 +587,53 @@ def raw_spatially_interpolate_files(
         )
 
         if not os.path.exists(out_tif_filepath) or overwrite:
-            read_spatially_interpolate_write(
-                value_tif_filepath = value_tif_filepath,
-                cropmask_tif_filepath = cropmask_tif_filepath,
-                interpmask_tif_filepath = interpmask_tif_filepath,
-                out_tif_filepath = out_tif_filepath,
-                attribute = attribute,
-                val_nodata = val_nodata,
-                upper_cap = upper_cap,
-                lower_cap = lower_cap,
-                model = model,
-                n_lags = n_lags,
-                bin_func = bin_func,
-                min_points = min_points,
-                max_points = max_points,
-                mode = mode,
-                mask_nodata = mask_nodata,
-                shift = shift,
-            )
+            # read_spatially_interpolate_write(
+            #     value_tif_filepath = value_tif_filepath,
+            #     cropmask_tif_filepath = cropmask_tif_filepath,
+            #     interpmask_tif_filepath = interpmask_tif_filepath,
+            #     out_tif_filepath = out_tif_filepath,
+            #     attribute = attribute,
+            #     val_nodata = val_nodata,
+            #     upper_cap = upper_cap,
+            #     lower_cap = lower_cap,
+            #     model = model,
+            #     n_lags = n_lags,
+            #     bin_func = bin_func,
+            #     min_points = min_points,
+            #     max_points = max_points,
+            #     mode = mode,
+            #     mask_nodata = mask_nodata,
+            #     shift = shift,
+            # )
+            args.append((
+                value_tif_filepath,
+                cropmask_tif_filepath,
+                interpmask_tif_filepath,
+                out_tif_filepath,
+                attribute,
+                val_nodata,
+                upper_cap,
+                lower_cap,
+                model,
+                n_lags,
+                bin_func,
+                min_points,
+                max_points,
+                mode,
+                mask_nodata,
+                shift,
+            ))
 
         for col in catalogue_df.columns:
             if col not in [tif_filepath_col]:
                 data[col].append(row[col])
         data[tif_filepath_col].append(out_tif_filepath)
+
+        with mp.Pool(njobs) as p:
+            tqdm.tqdm(
+                p.starmap_async(read_spatially_interpolate_write, args), 
+                total=len(args)
+            )
 
     out_catalogue_df = pd.DataFrame(data=data)
     
@@ -641,6 +669,7 @@ def spatially_interpolate_files(
     shift:float = 0.5,
     tif_filepath_col:str = TIF_FILEPATH_COL,
     attribute_col:str = ATTRIBUTE_COL,
+    njobs:int = 1,
 ):  
     if attribute not in presets.VALID_PARSER_KEYS:
         raise ValueError(
@@ -716,6 +745,7 @@ def spatially_interpolate_files(
         mask_nodata = mask_nodata,
         shift = shift,
         overwrite = overwrite_st_interp,
+        njobs = njobs,
     )
 
     print('Temporally interpolating interpmask pixels')
