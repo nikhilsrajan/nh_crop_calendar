@@ -31,43 +31,54 @@ if __name__ == '__main__':
 
     years = [int(year_str) for year_str in args.years.split(',')]
 
-    weather_catalogue_df = pd.read_csv(args.weather_catalog)
-
-    weather_catalogue_df[at2d.METHOD_COL] \
-    = at2d.LoadTIFMethod.READ_AND_CROP
-    weather_catalogue_df.loc[
-        weather_catalogue_df[cwdc.FILETYPE_COL] == cwdc.TIF_GZ_EXT,
-        at2d.METHOD_COL
-    ] = at2d.LoadTIFMethod.COREGISTER_AND_CROP
-    weather_catalogue_df.loc[
-        weather_catalogue_df[cwdc.ATTRIBUTE_COL] == 'ndvi-interp', 
-        at2d.METHOD_COL
-    ] = at2d.LoadTIFMethod.READ_NO_CROP
-
-    aggregated_df = at2d.aggregate_tifs_to_df(
-        catalogue_df = weather_catalogue_df,
-        mask_tif_filepaths = [
-            args.cropmask_filepath,
-            args.interpmask_filepath,
-        ],
-        roi_geom_filepath = args.roi_filepath,
-        ref_tif_filepath = args.ref_tif_filepath,
-        csvs_folderpath = args.csv_folderpath,
-    )
-
-    os.makedirs(args.export_folderpath, exist_ok=True)
-
-    for year in years:
-        aggregated_df[
-            aggregated_df['year'] == year
-        ].to_pickle(os.path.join(
+    expected_output_filepaths = [
+        os.path.join(
             args.export_folderpath,
             f'{args.prefix}_{year}.pickle',
-        ))
+        )
+        for year in years
+    ]
+
+    if not all([os.path.exists(fp) for fp in expected_output_filepaths]):
+        weather_catalogue_df = pd.read_csv(args.weather_catalog)
+
+        weather_catalogue_df[at2d.METHOD_COL] \
+        = at2d.LoadTIFMethod.READ_AND_CROP
+        weather_catalogue_df.loc[
+            weather_catalogue_df[cwdc.FILETYPE_COL] == cwdc.TIF_GZ_EXT,
+            at2d.METHOD_COL
+        ] = at2d.LoadTIFMethod.COREGISTER_AND_CROP
+        weather_catalogue_df.loc[
+            weather_catalogue_df[cwdc.ATTRIBUTE_COL] == 'ndvi-interp', 
+            at2d.METHOD_COL
+        ] = at2d.LoadTIFMethod.READ_NO_CROP
+
+        aggregated_df = at2d.aggregate_tifs_to_df(
+            catalogue_df = weather_catalogue_df,
+            mask_tif_filepaths = [
+                args.cropmask_filepath,
+                args.interpmask_filepath,
+            ],
+            roi_geom_filepath = args.roi_filepath,
+            ref_tif_filepath = args.ref_tif_filepath,
+            csvs_folderpath = args.csv_folderpath,
+        )
+
+        os.makedirs(args.export_folderpath, exist_ok=True)
+
+        for year in years:
+            aggregated_df[
+                aggregated_df['year'] == year
+            ].to_pickle(os.path.join(
+                args.export_folderpath,
+                f'{args.prefix}_{year}.pickle',
+            ))
+    else:
+        print('All aggregated dfs already created.')
 
     xy_gdf = at2d.create_xy_gdf(
-        cropmask_tif_filepath = args.cropmask,
-        interp_tif_filepath = args.interpmask,
+        cropmask_tif_filepath = args.cropmask_filepath,
+        interp_tif_filepath = args.interpmask_filepath,
     )
 
     xy_gdf.to_file(os.path.join(
