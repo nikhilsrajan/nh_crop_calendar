@@ -141,35 +141,37 @@ def read_catalogue_and_create_csvs(
         attribute_csv_folderpath = os.path.join(csvs_folderpath, attribute)
         os.makedirs(attribute_csv_folderpath, exist_ok=True)
         csv_filepath = os.path.join(attribute_csv_folderpath, f'{year}_{day}.csv')
+        try:
+            if not os.path.exists(csv_filepath) or overwrite:
+                if filetype == cwdc.TIF_GZ_EXT:
+                    gzip_tif = utils.GZipTIF(filepath)
+                    filepath = gzip_tif.decompress_and_load()
 
-        if not os.path.exists(csv_filepath) or overwrite:
-            if filetype == cwdc.TIF_GZ_EXT:
-                gzip_tif = utils.GZipTIF(filepath)
-                filepath = gzip_tif.decompress_and_load()
+                out_image, out_meta = load_tif(
+                    tif_filepath = filepath,
+                    bounds_gdf = bounds_gdf,
+                    reference_tif_filepath = ref_tif_filepath,
+                    method = method
+                )
 
-            out_image, out_meta = load_tif(
-                tif_filepath = filepath,
-                bounds_gdf = bounds_gdf,
-                reference_tif_filepath = ref_tif_filepath,
-                method = method
-            )
+                data = {
+                    X_COL: mask_xs,
+                    Y_COL: mask_ys,
+                    VAL_COL: out_image[0, mask_xs, mask_ys]
+                }
+                _df = pd.DataFrame(data=data)
+                _df.to_csv(csv_filepath, index=False)
+                del _df
 
-            data = {
-                X_COL: mask_xs,
-                Y_COL: mask_ys,
-                VAL_COL: out_image[0, mask_xs, mask_ys]
-            }
-            _df = pd.DataFrame(data=data)
-            _df.to_csv(csv_filepath, index=False)
-            del _df
+                del out_image, out_meta
 
-            del out_image, out_meta
-
-            if filetype == cwdc.TIF_GZ_EXT:
-                gzip_tif.delete_tif()
-                del gzip_tif
-        
-        catalogue_df.loc[index, CSV_FILEPATH_COL] = csv_filepath
+                if filetype == cwdc.TIF_GZ_EXT:
+                    gzip_tif.delete_tif()
+                    del gzip_tif
+            
+            catalogue_df.loc[index, CSV_FILEPATH_COL] = csv_filepath
+        except:
+            print(f'FAILED -- attribute={attribute}, filepath={filepath}, method={method}, year={year}, day={day}')
     
     return catalogue_df
 
