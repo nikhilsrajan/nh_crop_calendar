@@ -195,8 +195,11 @@ def aggregate_csvs(
         for index, row in tqdm.tqdm(
             attribute_catalogue_df.iterrows(), 
             total=attribute_catalogue_df.shape[0],
-        ):
+        ):  
             _filepath = row[csv_filepath_col]
+            if pd.isna(_filepath):
+                print('Filepath is NA. skipping csv.')
+                continue
             _year = row[year_col]
             _day = row[day_col]
             _df = pd.read_csv(_filepath)
