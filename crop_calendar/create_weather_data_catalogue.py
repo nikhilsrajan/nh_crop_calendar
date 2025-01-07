@@ -21,7 +21,7 @@ TIF_GZ_EXT = '.tif.gz'
 def generate_catalogue_df(
     attribute:str,
     attribute_folderpath:str,
-    years:list[int],
+    years:list[int] = None,
     tif_filepath_col:str = sif.TIF_FILEPATH_COL,
 ):
     if attribute not in presets.VALID_PARSER_KEYS:
@@ -44,8 +44,9 @@ def generate_catalogue_df(
         by=[presets.YEAR, presets.DAY]
     ).reset_index(drop=True)
 
-    attribute_catalogue_df = \
-    attribute_catalogue_df[attribute_catalogue_df[presets.YEAR].isin(years)]
+    if years is not None:
+        attribute_catalogue_df = \
+        attribute_catalogue_df[attribute_catalogue_df[presets.YEAR].isin(years)]
 
     attribute_catalogue_df[DATE_COL] = attribute_catalogue_df.apply(
         lambda row: (datetime.datetime(year=row[presets.YEAR], month=1, day=1) \
@@ -159,7 +160,7 @@ class Settings(object):
 
 def create_weather_data_catalogue_df(
     attribute_settings_dict:dict[str, Settings],
-    years:list[int],
+    years:list[int] = None,
     tif_filepath_col:str = sif.TIF_FILEPATH_COL,
 ):
     weather_data_catalogue_dfs = []
