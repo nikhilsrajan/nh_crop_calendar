@@ -27,6 +27,8 @@ def calculate_days_to_maturity_1d(
             gdd_at_maturity[start_index] = GDD_i
             if GDD_i > required_gdd:
                 break
+        if GDD_i < required_gdd:
+            days_to_maturity[start_index] = np.inf
 
     return days_to_maturity, gdd_at_maturity
 
