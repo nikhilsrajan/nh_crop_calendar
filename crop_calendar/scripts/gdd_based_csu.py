@@ -5,6 +5,7 @@ import shapely
 import tqdm
 import rasterio
 import numpy as np
+import datetime
 
 import sys
 sys.path.append('..')
@@ -123,6 +124,7 @@ if __name__ == '__main__':
     parser.add_argument('--start-year', required=False, default=None, help='Start year (YYYY)')
     parser.add_argument('--end-year', required=False, default=None, help='End year (YYYY)')
     parser.add_argument('--working-dir', required=True, help='Folderpath where working files will be stored')
+    parser.add_argument('--HM-cutoff-date', required=True, help='[YYYY-MM-DD] Date upto which "days to maturity" should be considered for calculating harmonic mean.')
 
     args = parser.parse_args()
 
@@ -132,6 +134,8 @@ if __name__ == '__main__':
     years = None
     if args.start_year is not None and args.end_year is not None:
         years = list(range(int(args.start_year), int(args.end_year) + 1))
+
+    hm_cutoff_date = datetime.datetime.strptime(str(args.HM_cutoff_date), '%Y-%m-%d')
 
     working_dir = str(args.working_dir)
     os.makedirs(working_dir, exist_ok=True)
@@ -164,6 +168,7 @@ if __name__ == '__main__':
     gdd_at_maturity_filepath = os.path.join(working_dir, f'gdd-at-maturity_{years[0]}_{years[-1]}.npy')
 
     dates = weather_catalogue_df['date'].unique().tolist()
+    dates = [datetime.datetime.strptime(dt, '%Y-%m-%d') for dt in dates]
     dates.sort()
 
     print('Creating mean temperature stack')
@@ -190,10 +195,8 @@ if __name__ == '__main__':
         np.save(gdd_at_maturity_filepath, gdd_at_maturity)
 
     print('Saving HM days to maturity')
-    first_invalid_index = (gdd_at_maturity < REQUIRED_GDD).argmax(axis=0).min()
-    last_valid_date = dates[first_invalid_index-1]
-    print(f'Last valid days to maturity date: {last_valid_date}')
-    valid_days_to_maturity = days_to_maturity[:first_invalid_index]
+    cutoff_index = np.where(np.array(dates) == hm_cutoff_date)[0][0]
+    valid_days_to_maturity = days_to_maturity[:cutoff_index+1] # +1 to include the cutoff date
     hm_days_to_maturity = valid_days_to_maturity.shape[0] / (1 / valid_days_to_maturity).sum(axis=0)
 
     cropped_template_filepath = weather_catalogue_df[COL_CROPPED_FILEPATH][0]
@@ -201,7 +204,8 @@ if __name__ == '__main__':
     with rasterio.open(cropped_template_filepath) as src:
         out_meta = src.meta.copy()
 
-    HM_days_to_maturity_filepath = os.path.join(working_dir, f'HM-days-to-maturity_{dates[0]}_{last_valid_date}.tif')
+    HM_days_to_maturity_filepath = os.path.join(working_dir, 
+                                                f"HM-days-to-maturity_{dates[0].strftime('%Y-%m-%d')}_{dates[cutoff_index].strftime('%Y-%m-%d')}.tif")
 
     with rasterio.open(HM_days_to_maturity_filepath, 'w', **out_meta) as dst:
         dst.write(
