@@ -28,7 +28,7 @@ GEOGLAM_CHIRPS_FOLDERPATH = '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/chirps/g
 # Maize medium variety, source: FAO
 ## link: https://www.fao.org/land-water/databases-and-software/crop-information/maize/es/
 ## maize water needs source: https://www.fao.org/4/s2022e/s2022e07.htm#chapter%203:%20crop%20water%20needs -- 500-800 mm/total growing period
-REQUIRED_PRECP = 800 # mm / total growing period
+REQUIRED_PRECP = 500 # mm / total growing period
 
 COL_CROPPED_FILEPATH = 'cropped_filepath'
 
@@ -127,7 +127,7 @@ def get_prec_stack(weather_catalogue_df, nodata=0):
             raise ValueError(f'Missing date: {date}')
         
     prec_stack[prec_stack < 0] = np.nan
-    prec_stack = prec_stack / 10000
+    prec_stack = prec_stack / 100
 
     return prec_stack, dates
 
