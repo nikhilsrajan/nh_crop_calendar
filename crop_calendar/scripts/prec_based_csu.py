@@ -116,6 +116,7 @@ def get_prec_stack(weather_catalogue_df, nodata=0):
     prec_stack = np.full(shape=(len(dates), height, width), fill_value=nodata, dtype=float)
 
     for i, date in tqdm.tqdm(enumerate(dates), total=len(dates)):
+        date = date.strftime('%Y-%m-%d')
         if date in dates_filepaths_dict.keys():
             filepaths_dict = dates_filepaths_dict[date]
             if 'chirps' in filepaths_dict.keys():
