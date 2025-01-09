@@ -126,8 +126,6 @@ def get_prec_stack(weather_catalogue_df, nodata=0):
         else:
             raise ValueError(f'Missing date: {date}')
         
-    prec_stack = np.concatenate(prec_stack, axis=0)
-    prec_stack = prec_stack.astype(dtype=float)
     prec_stack[prec_stack < 0] = np.nan
     prec_stack = prec_stack / 10000
 
