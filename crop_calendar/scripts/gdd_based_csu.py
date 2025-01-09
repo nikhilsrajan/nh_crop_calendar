@@ -19,13 +19,13 @@ import rsutils.utils
 import rsutils.modify_images
 
 
-# # cluster paths
-# GEOGLAM_CPC_TMAX_FOLDERPATH = '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/cpc_tmax'
-# GEOGLAM_CPC_TMIN_FOLDERPATH = '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/cpc_tmin'
+# cluster paths
+GEOGLAM_CPC_TMAX_FOLDERPATH = '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/cpc_tmax'
+GEOGLAM_CPC_TMIN_FOLDERPATH = '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/cpc_tmin'
 
-# local debug
-GEOGLAM_CPC_TMAX_FOLDERPATH = '../data/cluster_files/cpc_tmax'
-GEOGLAM_CPC_TMIN_FOLDERPATH = '../data/cluster_files/cpc_tmin'
+# # local debug
+# GEOGLAM_CPC_TMAX_FOLDERPATH = '../data/cluster_files/cpc_tmax'
+# GEOGLAM_CPC_TMIN_FOLDERPATH = '../data/cluster_files/cpc_tmin'
 
 # Maize medium variety, source: FAO
 ## link: https://www.fao.org/land-water/databases-and-software/crop-information/maize/es/
