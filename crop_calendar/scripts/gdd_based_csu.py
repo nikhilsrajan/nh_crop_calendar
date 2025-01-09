@@ -88,6 +88,7 @@ def crop_weather_data_to_roi_bounds(
             (rsutils.modify_images.crop, dict(shapes_gdf = bounds_gdf, all_touched = True))
         ],
         njobs = njobs,
+        working_dir = working_dir,
     )
     
     return weather_catalogue_df
