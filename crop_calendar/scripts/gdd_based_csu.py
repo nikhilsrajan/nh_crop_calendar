@@ -7,6 +7,7 @@ import numpy as np
 import datetime
 import numba
 import tqdm
+import time
 
 import sys
 sys.path.append('..')
@@ -144,6 +145,8 @@ def get_tmean_stack(weather_catalogue_df, nodata = np.nan):
 
 
 if __name__ == '__main__':
+    start_time = time.time()
+
     parser = argparse.ArgumentParser(
         prog = 'python gdd_based_csu.py',
         description = (
@@ -220,6 +223,8 @@ if __name__ == '__main__':
         gdd_at_maturity = np.load(gdd_at_maturity_filepath)
     else:
         numba.set_num_threads(n = njobs)
+
+        _start_time = time.time()
         days_to_maturity, gdd_at_maturity = \
         csu.calculate_days_to_maturity(
             temp_ts = t_mean_stack,
@@ -228,6 +233,9 @@ if __name__ == '__main__':
             max_tolerable_temp = MAX_TOLERABLE_TEMP,
             min_tolerable_temp = MIN_TOLERABLE_TEMP,
         )
+        _end_time = time.time()
+
+        print(f't_elapsed: {_end_time - _start_time} s')
         np.save(days_to_maturity_filepath, days_to_maturity)
         np.save(gdd_at_maturity_filepath, gdd_at_maturity)
 
@@ -249,3 +257,6 @@ if __name__ == '__main__':
             np.expand_dims(hm_days_to_maturity, axis=0)
         )
     print(f'Saved HM days to maturity: {os.path.abspath(HM_days_to_maturity_filepath)}')
+
+    end_time = time.time()
+    print(f'--- t_elapsed: {_end_time - _start_time} s ---')

@@ -7,6 +7,7 @@ import numpy as np
 import datetime
 import numba
 import tqdm
+import time
 
 import sys
 sys.path.append('..')
@@ -132,6 +133,8 @@ def get_prec_stack(weather_catalogue_df, nodata=0):
 
 
 if __name__ == '__main__':
+    start_time = time.time()
+
     parser = argparse.ArgumentParser(
         prog = 'python prec_based_csu.py',
         description = (
@@ -151,8 +154,6 @@ if __name__ == '__main__':
     roi_gdf = gpd.read_file(str(args.roi_shape_filepath))
     bounds_gdf = get_bounds_gdf(shapes_gdf = roi_gdf, hardset_crs='epsg:4326')
     njobs = int(args.njobs)
-    
-    numba.set_num_threads(n = njobs)
 
     years = None
     if args.start_year is not None and args.end_year is not None:
@@ -204,6 +205,8 @@ if __name__ == '__main__':
         prec_to_req_prec = np.load(prec_at_req_prec_filepath)
     else:
         # need to refactor function to be more general
+        numba.set_num_threads(n = njobs)
+        _start_time = time.time()
         days_to_req_prec, prec_to_req_prec = \
         csu.calculate_days_to_maturity(
             temp_ts = prec_stack,
@@ -212,6 +215,10 @@ if __name__ == '__main__':
             max_tolerable_temp = 10000,
             min_tolerable_temp = -10000,
         )
+        _end_time = time.time()
+
+        print(f't_elapsed: {_end_time - _start_time} s')
+
         np.save(days_to_req_prec_filepath, days_to_req_prec)
         np.save(prec_at_req_prec_filepath, prec_to_req_prec)
 
@@ -233,3 +240,6 @@ if __name__ == '__main__':
         dst.write(np.expand_dims(hm_days_to_req_prec, axis=0))
 
     print(f'Saved HM days to required precipitation: {os.path.abspath(HM_days_to_req_prec_filepath)}')
+
+    end_time = time.time()
+    print(f'--- t_elapsed: {_end_time - _start_time} s ---')
