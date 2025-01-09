@@ -18,20 +18,16 @@ import rsutils.utils
 import rsutils.modify_images
 
 
-# # cluster paths
-# GEOGLAM_CPC_TMAX_FOLDERPATH = '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/cpc_tmax'
-# GEOGLAM_CPC_TMIN_FOLDERPATH = '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/cpc_tmin'
+# cluster paths
+GEOGLAM_CHIRPS_FOLDERPATH = '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/chirps/global'
 
-# local debug
-GEOGLAM_CPC_TMAX_FOLDERPATH = '../data/cluster_files/cpc_tmax'
-GEOGLAM_CPC_TMIN_FOLDERPATH = '../data/cluster_files/cpc_tmin'
+# # local debug
+# GEOGLAM_CHIRPS_FOLDERPATH = '../data/cluster_files/chirps'
 
 # Maize medium variety, source: FAO
 ## link: https://www.fao.org/land-water/databases-and-software/crop-information/maize/es/
-T_BASE = 10
-REQUIRED_GDD = 3000
-MAX_TOLERABLE_TEMP = 45
-MIN_TOLERABLE_TEMP = 0
+## maize water needs source: https://www.fao.org/4/s2022e/s2022e07.htm#chapter%203:%20crop%20water%20needs -- 500-800 mm/total growing period
+REQUIRED_PRECP = 800 # mm / total growing period
 
 COL_CROPPED_FILEPATH = 'cropped_filepath'
 
@@ -92,9 +88,8 @@ def crop_weather_data_to_roi_bounds(
     return weather_catalogue_df
 
 
-def get_tmean_stack(weather_catalogue_df, nodata = np.nan):
-    t_mean_stack = []
-
+def get_prec_stack(weather_catalogue_df, nodata=0):
+    # refactor to fill zeros for missing dates !!
     weather_catalogue_df = weather_catalogue_df.sort_values(by='date')
 
     start_date = weather_catalogue_df['date'].min()
@@ -116,38 +111,31 @@ def get_tmean_stack(weather_catalogue_df, nodata = np.nan):
     with rasterio.open(template_filepath) as src:
         _, height, width = src.read().shape
 
-    t_mean_stack = np.full(shape=(len(dates), height, width), fill_value=nodata, dtype=float)
+    prec_stack = np.full(shape=(len(dates), height, width), fill_value=nodata, dtype=float)
 
     for i, date in tqdm.tqdm(enumerate(dates), total=len(dates)):
         if date in dates_filepaths_dict.keys():
             filepaths_dict = dates_filepaths_dict[date]
-            if 'cpc-tmax' in filepaths_dict.keys():
-                filepath = filepaths_dict['cpc-tmax']
+            if 'chirps' in filepaths_dict.keys():
+                filepath = filepaths_dict['chirps']
                 with rasterio.open(filepath) as src:
-                    cpc_tmax = src.read()
-            else:
-                raise ValueError(f'Missing date for cpc-tmax: {date}')
-            
-            if 'cpc-tmin' in filepaths_dict.keys():
-                filepath = filepaths_dict['cpc-tmin']
-                with rasterio.open(filepath) as src:
-                    cpc_tmin = src.read()
-            else:
-                raise ValueError(f'Missing date for cpc-tmin: {date}')
-            
-            t_mean_stack[i] = (cpc_tmax + cpc_tmin) / 2
-        
+                    prec_stack[i] = src.read()
         else:
             raise ValueError(f'Missing date: {date}')
+        
+    prec_stack = np.concatenate(prec_stack, axis=0)
+    prec_stack = prec_stack.astype(dtype=float)
+    prec_stack[prec_stack < 0] = np.nan
+    prec_stack = prec_stack / 10000
 
-    return t_mean_stack
+    return prec_stack, dates
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        prog = 'python gdd_based_csu.py',
+        prog = 'python prec_based_csu.py',
         description = (
-            'Script to create GDD based CSU for a given shapefile.'
+            'Script to create Precipitation based CSU for a given shapefile.'
         ),
     )
     
@@ -157,13 +145,15 @@ if __name__ == '__main__':
     parser.add_argument('--working-dir', required=True, help='Folderpath where working files will be stored')
     parser.add_argument('--HM-cutoff-date', required=True, help='[YYYY-MM-DD] Date upto which "days to maturity" should be considered for calculating harmonic mean.')
     parser.add_argument('--njobs', required=False, default=1, help='Number of cores to run.')
-
+    
     args = parser.parse_args()
 
     roi_gdf = gpd.read_file(str(args.roi_shape_filepath))
     bounds_gdf = get_bounds_gdf(shapes_gdf = roi_gdf, hardset_crs='epsg:4326')
     njobs = int(args.njobs)
     
+    numba.set_num_threads(n = njobs)
+
     years = None
     if args.start_year is not None and args.end_year is not None:
         years = list(range(int(args.start_year), int(args.end_year) + 1))
@@ -176,11 +166,8 @@ if __name__ == '__main__':
     weather_catalogue_df = cwdc.create_weather_data_catalogue_df(
         years = years,
         attribute_settings_dict = {
-            presets.ATTR_CPCTMAX: cwdc.Settings(
-                attribute_folderpath = GEOGLAM_CPC_TMAX_FOLDERPATH,
-            ),
-            presets.ATTR_CPCTMIN: cwdc.Settings(
-                attribute_folderpath = GEOGLAM_CPC_TMIN_FOLDERPATH,
+            presets.ATTR_CHIRPS: cwdc.Settings(
+                attribute_folderpath = GEOGLAM_CHIRPS_FOLDERPATH,
             ),
         }
     )
@@ -197,55 +184,52 @@ if __name__ == '__main__':
         years = weather_catalogue_df['year'].unique().tolist()
         years.sort()
 
-    t_mean_stack_filepath = os.path.join(working_dir, f'tmean-stack_{years[0]}_{years[-1]}.npy')
-    days_to_maturity_filepath = os.path.join(working_dir, f'days-to-maturity_{years[0]}_{years[-1]}.npy')
-    gdd_at_maturity_filepath = os.path.join(working_dir, f'gdd-at-maturity_{years[0]}_{years[-1]}.npy')
-
-    gdd_dates = weather_catalogue_df[
-        weather_catalogue_df['attribute'].isin([presets.ATTR_CPCTMAX, presets.ATTR_CPCTMIN])
-    ]['date'].unique().tolist()
-    gdd_dates = [datetime.datetime.strptime(dt, '%Y-%m-%d') for dt in gdd_dates]
-    gdd_dates.sort()
+    prec_stack_filepath = os.path.join(working_dir, f'prec-stack_{years[0]}_{years[-1]}.npy')
+    prec_dates_filepath = os.path.join(working_dir, f'prec-dates_{years[0]}_{years[-1]}.npy')
+    days_to_req_prec_filepath = os.path.join(working_dir, f'days-to-req-prec_{years[0]}_{years[-1]}.npy')
+    prec_at_req_prec_filepath = os.path.join(working_dir, f'prec-at-req-prec_{years[0]}_{years[-1]}.npy')
 
     print('Creating mean temperature stack')
-    if os.path.exists(t_mean_stack_filepath):
-        t_mean_stack = np.load(t_mean_stack_filepath)
+    if os.path.exists(prec_stack_filepath):
+        prec_stack = np.load(prec_stack_filepath)
+        prec_dates = np.load(prec_dates_filepath)
     else:
-        t_mean_stack = get_tmean_stack(weather_catalogue_df=weather_catalogue_df)
-        np.save(t_mean_stack_filepath, t_mean_stack)
+        prec_stack, prec_dates = get_prec_stack(weather_catalogue_df=weather_catalogue_df)
+        np.save(prec_stack_filepath, prec_stack)
+        np.save(prec_dates_filepath, prec_dates)
 
-    print('Compute days to maturity')
-    if os.path.exists(days_to_maturity_filepath) and os.path.exists(gdd_at_maturity_filepath):
-        days_to_maturity = np.load(days_to_maturity_filepath)
-        gdd_at_maturity = np.load(gdd_at_maturity_filepath)
+    print('Compute days to required precipitation')
+    if os.path.exists(days_to_req_prec_filepath) and os.path.exists(prec_at_req_prec_filepath):
+        days_to_req_prec = np.load(days_to_req_prec_filepath)
+        prec_to_req_prec = np.load(prec_at_req_prec_filepath)
     else:
-        numba.set_num_threads(n = njobs)
-        days_to_maturity, gdd_at_maturity = \
+        # need to refactor function to be more general
+        days_to_req_prec, prec_to_req_prec = \
         csu.calculate_days_to_maturity(
-            temp_ts = t_mean_stack,
-            t_base = T_BASE,
-            required_gdd = REQUIRED_GDD,
-            max_tolerable_temp = MAX_TOLERABLE_TEMP,
-            min_tolerable_temp = MIN_TOLERABLE_TEMP,
+            temp_ts = prec_stack,
+            t_base = 0,
+            required_gdd = 800,
+            max_tolerable_temp = 10000,
+            min_tolerable_temp = -10000,
         )
-        np.save(days_to_maturity_filepath, days_to_maturity)
-        np.save(gdd_at_maturity_filepath, gdd_at_maturity)
+        np.save(days_to_req_prec_filepath, days_to_req_prec)
+        np.save(prec_at_req_prec_filepath, prec_to_req_prec)
 
-    print('Saving HM days to maturity')
-    cutoff_index = np.where(np.array(gdd_dates) == hm_cutoff_date)[0][0]
-    valid_days_to_maturity = days_to_maturity[:cutoff_index+1] # +1 to include the cutoff date
-    hm_days_to_maturity = valid_days_to_maturity.shape[0] / (1 / valid_days_to_maturity).sum(axis=0)
+    print('Saving HM days to required precipitation')
+    cutoff_index = np.where(np.array(prec_dates) == hm_cutoff_date)[0][0]
+    valid_days_to_req_prec = days_to_req_prec[:cutoff_index+1] # +1 to include the cutoff date
+    hm_days_to_req_prec = valid_days_to_req_prec.shape[0] / (1 / valid_days_to_req_prec).sum(axis=0)
 
     cropped_template_filepath = weather_catalogue_df[COL_CROPPED_FILEPATH][0]
 
     with rasterio.open(cropped_template_filepath) as src:
         out_meta = src.meta.copy()
 
-    HM_days_to_maturity_filepath = os.path.join(working_dir, 
-                                                f"HM-days-to-maturity_{gdd_dates[0].strftime('%Y-%m-%d')}_{gdd_dates[cutoff_index].strftime('%Y-%m-%d')}.tif")
+    HM_days_to_req_prec_filepath = os.path.join(
+        working_dir, f"HM-days-to-req-prec_{prec_dates[0].strftime('%Y-%m-%d')}_{prec_dates[cutoff_index].strftime('%Y-%m-%d')}.tif"
+    )
 
-    with rasterio.open(HM_days_to_maturity_filepath, 'w', **out_meta) as dst:
-        dst.write(
-            np.expand_dims(hm_days_to_maturity, axis=0)
-        )
-    print(f'Saved HM days to maturity: {os.path.abspath(HM_days_to_maturity_filepath)}')
+    with rasterio.open(HM_days_to_req_prec_filepath, 'w', **out_meta) as dst:
+        dst.write(np.expand_dims(hm_days_to_req_prec, axis=0))
+
+    print(f'Saved HM days to required precipitation: {os.path.abspath(HM_days_to_req_prec_filepath)}')
