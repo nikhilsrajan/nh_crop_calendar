@@ -105,7 +105,7 @@ def get_tmean_stack(weather_catalogue_df, nodata = np.nan):
     start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
     end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
 
-    dates = [(start_date + datetime.timedelta(days=d)).strftime('%Y-%m-%d') 
+    dates = [start_date + datetime.timedelta(days=d)
              for d in range((end_date - start_date).days + 1)]
     
     dates_filepaths_dict = weather_catalogue_df.groupby('date')[
@@ -183,6 +183,7 @@ if __name__ == '__main__':
     gdd_at_maturity_filepath = os.path.join(working_dir, f'gdd-at-maturity_{years[0]}_{years[-1]}.npy')
 
     if os.path.exists(t_mean_stack_filepath) and os.path.exists(gdd_dates_filepath):
+        print('Loading mean temperature stack')
         t_mean_stack = np.load(t_mean_stack_filepath)
         gdd_dates = np.load(gdd_dates_filepath)
     else:
@@ -214,6 +215,7 @@ if __name__ == '__main__':
         t_mean_stack, gdd_dates = get_tmean_stack(weather_catalogue_df=weather_catalogue_df)
         np.save(t_mean_stack_filepath, t_mean_stack)
         np.save(gdd_dates_filepath, gdd_dates)
+
 
     if os.path.exists(days_to_maturity_filepath) and os.path.exists(gdd_at_maturity_filepath):
         print('Loading days to maturity')

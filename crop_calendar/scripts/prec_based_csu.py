@@ -100,7 +100,7 @@ def get_prec_stack(weather_catalogue_df, nodata=0):
     start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
     end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
 
-    dates = [(start_date + datetime.timedelta(days=d)).strftime('%Y-%m-%d') 
+    dates = [start_date + datetime.timedelta(days=d)
              for d in range((end_date - start_date).days + 1)]
     
     dates_filepaths_dict = weather_catalogue_df.groupby('date')[
