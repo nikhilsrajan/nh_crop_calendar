@@ -142,7 +142,7 @@ def get_tmean_stack(weather_catalogue_df, nodata = np.nan):
         else:
             raise ValueError(f'Missing date: {date}')
 
-    return t_mean_stack
+    return t_mean_stack, dates
 
 
 if __name__ == '__main__':
@@ -177,52 +177,50 @@ if __name__ == '__main__':
     working_dir = str(args.working_dir)
     os.makedirs(working_dir, exist_ok=True)
 
-    weather_catalogue_df = cwdc.create_weather_data_catalogue_df(
-        years = years,
-        attribute_settings_dict = {
-            presets.ATTR_CPCTMAX: cwdc.Settings(
-                attribute_folderpath = GEOGLAM_CPC_TMAX_FOLDERPATH,
-            ),
-            presets.ATTR_CPCTMIN: cwdc.Settings(
-                attribute_folderpath = GEOGLAM_CPC_TMIN_FOLDERPATH,
-            ),
-        }
-    )
-
-    print('Cropping weather data to roi bounds')
-    weather_catalogue_df = crop_weather_data_to_roi_bounds(
-        weather_catalogue_df = weather_catalogue_df,
-        bounds_gdf = bounds_gdf, 
-        working_dir = working_dir,
-        njobs = njobs,
-    )
-    if years is None:
-        print(weather_catalogue_df.columns)
-        years = weather_catalogue_df['year'].unique().tolist()
-        years.sort()
-
     t_mean_stack_filepath = os.path.join(working_dir, f'tmean-stack_{years[0]}_{years[-1]}.npy')
+    gdd_dates_filepath = os.path.join(working_dir, f'gdd-dates_{years[0]}_{years[-1]}.npy')
     days_to_maturity_filepath = os.path.join(working_dir, f'days-to-maturity_{years[0]}_{years[-1]}.npy')
     gdd_at_maturity_filepath = os.path.join(working_dir, f'gdd-at-maturity_{years[0]}_{years[-1]}.npy')
 
-    gdd_dates = weather_catalogue_df[
-        weather_catalogue_df['attribute'].isin([presets.ATTR_CPCTMAX, presets.ATTR_CPCTMIN])
-    ]['date'].unique().tolist()
-    gdd_dates = [datetime.datetime.strptime(dt, '%Y-%m-%d') for dt in gdd_dates]
-    gdd_dates.sort()
-
-    print('Creating mean temperature stack')
-    if os.path.exists(t_mean_stack_filepath):
+    if os.path.exists(t_mean_stack_filepath) and os.path.exists(gdd_dates_filepath):
         t_mean_stack = np.load(t_mean_stack_filepath)
+        gdd_dates = np.load(gdd_dates_filepath)
     else:
-        t_mean_stack = get_tmean_stack(weather_catalogue_df=weather_catalogue_df)
-        np.save(t_mean_stack_filepath, t_mean_stack)
+        weather_catalogue_df = cwdc.create_weather_data_catalogue_df(
+            years = years,
+            attribute_settings_dict = {
+                presets.ATTR_CPCTMAX: cwdc.Settings(
+                    attribute_folderpath = GEOGLAM_CPC_TMAX_FOLDERPATH,
+                ),
+                presets.ATTR_CPCTMIN: cwdc.Settings(
+                    attribute_folderpath = GEOGLAM_CPC_TMIN_FOLDERPATH,
+                ),
+            }
+        )
 
-    print('Compute days to maturity')
+        print('Cropping weather data to roi bounds')
+        weather_catalogue_df = crop_weather_data_to_roi_bounds(
+            weather_catalogue_df = weather_catalogue_df,
+            bounds_gdf = bounds_gdf, 
+            working_dir = working_dir,
+            njobs = njobs,
+        )
+        if years is None:
+            print(weather_catalogue_df.columns)
+            years = weather_catalogue_df['year'].unique().tolist()
+            years.sort()
+
+        print('Creating mean temperature stack')
+        t_mean_stack, gdd_dates = get_tmean_stack(weather_catalogue_df=weather_catalogue_df)
+        np.save(t_mean_stack_filepath, t_mean_stack)
+        np.save(gdd_dates_filepath, gdd_dates)
+
     if os.path.exists(days_to_maturity_filepath) and os.path.exists(gdd_at_maturity_filepath):
+        print('Loading days to maturity')
         days_to_maturity = np.load(days_to_maturity_filepath)
         gdd_at_maturity = np.load(gdd_at_maturity_filepath)
     else:
+        print('Compute days to maturity')
         numba.set_num_threads(n = njobs)
 
         _start_time = time.time()

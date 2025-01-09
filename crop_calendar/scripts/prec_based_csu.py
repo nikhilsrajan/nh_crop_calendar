@@ -165,46 +165,49 @@ if __name__ == '__main__':
     working_dir = str(args.working_dir)
     os.makedirs(working_dir, exist_ok=True)
 
-    weather_catalogue_df = cwdc.create_weather_data_catalogue_df(
-        years = years,
-        attribute_settings_dict = {
-            presets.ATTR_CHIRPS: cwdc.Settings(
-                attribute_folderpath = GEOGLAM_CHIRPS_FOLDERPATH,
-            ),
-        }
-    )
-
-    print('Cropping weather data to roi bounds')
-    weather_catalogue_df = crop_weather_data_to_roi_bounds(
-        weather_catalogue_df = weather_catalogue_df,
-        bounds_gdf = bounds_gdf, 
-        working_dir = working_dir,
-        njobs = njobs,
-    )
-    if years is None:
-        print(weather_catalogue_df.columns)
-        years = weather_catalogue_df['year'].unique().tolist()
-        years.sort()
-
     prec_stack_filepath = os.path.join(working_dir, f'prec-stack_{years[0]}_{years[-1]}.npy')
     prec_dates_filepath = os.path.join(working_dir, f'prec-dates_{years[0]}_{years[-1]}.npy')
     days_to_req_prec_filepath = os.path.join(working_dir, f'days-to-req-prec_{years[0]}_{years[-1]}.npy')
     prec_at_req_prec_filepath = os.path.join(working_dir, f'prec-at-req-prec_{years[0]}_{years[-1]}.npy')
 
-    print('Creating mean temperature stack')
-    if os.path.exists(prec_stack_filepath):
+    if os.path.exists(prec_stack_filepath) and os.path.exists(prec_dates_filepath):
+        print('Loading precipitation stack')
         prec_stack = np.load(prec_stack_filepath)
         prec_dates = np.load(prec_dates_filepath)
     else:
+        weather_catalogue_df = cwdc.create_weather_data_catalogue_df(
+            years = years,
+            attribute_settings_dict = {
+                presets.ATTR_CHIRPS: cwdc.Settings(
+                    attribute_folderpath = GEOGLAM_CHIRPS_FOLDERPATH,
+                ),
+            }
+        )
+
+        print('Cropping weather data to roi bounds')
+        weather_catalogue_df = crop_weather_data_to_roi_bounds(
+            weather_catalogue_df = weather_catalogue_df,
+            bounds_gdf = bounds_gdf, 
+            working_dir = working_dir,
+            njobs = njobs,
+        )
+        if years is None:
+            print(weather_catalogue_df.columns)
+            years = weather_catalogue_df['year'].unique().tolist()
+            years.sort()
+
+        print('Creating precipitation stack')
         prec_stack, prec_dates = get_prec_stack(weather_catalogue_df=weather_catalogue_df)
         np.save(prec_stack_filepath, prec_stack)
         np.save(prec_dates_filepath, prec_dates)
 
-    print('Compute days to required precipitation')
+    
     if os.path.exists(days_to_req_prec_filepath) and os.path.exists(prec_at_req_prec_filepath):
+        print('Loading days to required precipitation')
         days_to_req_prec = np.load(days_to_req_prec_filepath)
         prec_to_req_prec = np.load(prec_at_req_prec_filepath)
     else:
+        print('Compute days to required precipitation')
         # need to refactor function to be more general
         numba.set_num_threads(n = njobs)
         _start_time = time.time()
