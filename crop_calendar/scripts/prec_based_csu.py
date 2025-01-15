@@ -172,7 +172,7 @@ if __name__ == '__main__':
     if os.path.exists(prec_stack_filepath) and os.path.exists(prec_dates_filepath):
         print('Loading precipitation stack')
         prec_stack = np.load(prec_stack_filepath)
-        prec_dates = np.load(prec_dates_filepath)
+        prec_dates = np.load(prec_dates_filepath, allow_pickle=True)
     else:
         weather_catalogue_df = cwdc.create_weather_data_catalogue_df(
             years = years,

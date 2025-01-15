@@ -186,7 +186,7 @@ if __name__ == '__main__':
     if os.path.exists(t_mean_stack_filepath) and os.path.exists(gdd_dates_filepath):
         print('Loading mean temperature stack')
         t_mean_stack = np.load(t_mean_stack_filepath)
-        gdd_dates = np.load(gdd_dates_filepath)
+        gdd_dates = np.load(gdd_dates_filepath, allow_pickle=True)
     else:
         weather_catalogue_df = cwdc.create_weather_data_catalogue_df(
             years = years,
