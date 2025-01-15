@@ -168,11 +168,18 @@ if __name__ == '__main__':
     prec_dates_filepath = os.path.join(working_dir, f'prec-dates_{years[0]}_{years[-1]}.npy')
     days_to_req_prec_filepath = os.path.join(working_dir, f'days-to-req-prec_{years[0]}_{years[-1]}.npy')
     prec_at_req_prec_filepath = os.path.join(working_dir, f'prec-at-req-prec_{years[0]}_{years[-1]}.npy')
+    cropped_template_filepath_txtfile = os.path.join(working_dir, f'prec_cropped_template_filepath.txt')
 
-    if os.path.exists(prec_stack_filepath) and os.path.exists(prec_dates_filepath):
+    if os.path.exists(prec_stack_filepath) \
+    and os.path.exists(prec_dates_filepath) \
+    and os.path.exists(cropped_template_filepath_txtfile):
         print('Loading precipitation stack')
         prec_stack = np.load(prec_stack_filepath)
         prec_dates = np.load(prec_dates_filepath, allow_pickle=True)
+        
+        with open(cropped_template_filepath_txtfile, 'r') as f:
+            cropped_template_filepath = f.read()
+
     else:
         weather_catalogue_df = cwdc.create_weather_data_catalogue_df(
             years = years,
@@ -190,6 +197,10 @@ if __name__ == '__main__':
             working_dir = working_dir,
             njobs = njobs,
         )
+        cropped_template_filepath = weather_catalogue_df[COL_CROPPED_FILEPATH][0]
+        with open(cropped_template_filepath_txtfile, 'w') as f:
+            f.write(cropped_template_filepath)
+
         if years is None:
             print(weather_catalogue_df.columns)
             years = weather_catalogue_df['year'].unique().tolist()

@@ -182,11 +182,18 @@ if __name__ == '__main__':
     gdd_dates_filepath = os.path.join(working_dir, f'gdd-dates_{years[0]}_{years[-1]}.npy')
     days_to_maturity_filepath = os.path.join(working_dir, f'days-to-maturity_{years[0]}_{years[-1]}.npy')
     gdd_at_maturity_filepath = os.path.join(working_dir, f'gdd-at-maturity_{years[0]}_{years[-1]}.npy')
+    cropped_template_filepath_txtfile = os.path.join(working_dir, f'gdd_cropped_template_filepath.txt')
 
-    if os.path.exists(t_mean_stack_filepath) and os.path.exists(gdd_dates_filepath):
+    if os.path.exists(t_mean_stack_filepath) \
+    and os.path.exists(gdd_dates_filepath) \
+    and os.path.exists(cropped_template_filepath_txtfile):
         print('Loading mean temperature stack')
         t_mean_stack = np.load(t_mean_stack_filepath)
         gdd_dates = np.load(gdd_dates_filepath, allow_pickle=True)
+        
+        with open(cropped_template_filepath_txtfile, 'r') as f:
+            cropped_template_filepath = f.read()
+
     else:
         weather_catalogue_df = cwdc.create_weather_data_catalogue_df(
             years = years,
@@ -207,6 +214,11 @@ if __name__ == '__main__':
             working_dir = working_dir,
             njobs = njobs,
         )
+
+        cropped_template_filepath = weather_catalogue_df[COL_CROPPED_FILEPATH][0]
+        with open(cropped_template_filepath_txtfile, 'w') as f:
+            f.write(cropped_template_filepath)
+
         if years is None:
             print(weather_catalogue_df.columns)
             years = weather_catalogue_df['year'].unique().tolist()
@@ -245,8 +257,6 @@ if __name__ == '__main__':
     cutoff_index = np.where(np.array(gdd_dates) == hm_cutoff_date)[0][0]
     valid_days_to_maturity = days_to_maturity[:cutoff_index+1] # +1 to include the cutoff date
     hm_days_to_maturity = valid_days_to_maturity.shape[0] / (1 / valid_days_to_maturity).sum(axis=0)
-
-    cropped_template_filepath = weather_catalogue_df[COL_CROPPED_FILEPATH][0]
 
     with rasterio.open(cropped_template_filepath) as src:
         out_meta = src.meta.copy()
