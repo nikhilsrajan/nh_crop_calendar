@@ -239,10 +239,12 @@ if __name__ == '__main__':
         working_dir, f"HM-days-to-req-prec_{prec_dates[0].strftime('%Y-%m-%d')}_{prec_dates[cutoff_index].strftime('%Y-%m-%d')}.tif"
     )
 
+    out_meta['dtype'] = 'float32'
+
     with rasterio.open(HM_days_to_req_prec_filepath, 'w', **out_meta) as dst:
         dst.write(np.expand_dims(hm_days_to_req_prec, axis=0))
 
     print(f'Saved HM days to required precipitation: {os.path.abspath(HM_days_to_req_prec_filepath)}')
 
     end_time = time.time()
-    print(f'--- t_elapsed: {_end_time - _start_time} s ---')
+    print(f'--- t_elapsed: {end_time - start_time} s ---')

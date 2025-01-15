@@ -261,4 +261,4 @@ if __name__ == '__main__':
     print(f'Saved HM days to maturity: {os.path.abspath(HM_days_to_maturity_filepath)}')
 
     end_time = time.time()
-    print(f'--- t_elapsed: {_end_time - _start_time} s ---')
+    print(f'--- t_elapsed: {end_time - start_time} s ---')
