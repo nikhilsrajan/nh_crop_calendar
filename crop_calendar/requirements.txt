@@ -7,3 +7,4 @@ rasterio
 s2
 scikit-learn
 scikit-gstat
+xarray

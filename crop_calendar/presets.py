@@ -1,3 +1,6 @@
+import datetime
+
+
 # parsers
 
 YEAR = 'year'
@@ -13,6 +16,8 @@ ATTR_ESI4WK = 'esi-4wk'
 ATTR_CPCTMAX = 'cpc-tmax'
 ATTR_CPCTMIN = 'cpc-tmin'
 ATTR_NDVI_INTERP = 'ndvi-interp'
+ATTR_GCVI = 'gcvi'
+ATTR_FPAR = 'fpar'
 
 
 def interp_filename_parser(filename:str):
@@ -69,6 +74,17 @@ def cpc_filename_parser(filename:str):
     }
 
 
+def fpar_filename_parser(filename:str):
+    date_str = filename.split('_')[-1].split('.')[0]
+    date = datetime.datetime.strptime(date_str, '%Y%m%d')
+    year = date.year
+    day = (datetime.datetime(year, 1, 1) - date).days + 1
+    return {
+        YEAR: year,
+        DAY: day,
+    }
+
+
 def ndvi_normalise(x):
     return (x - 50) / 200
 
@@ -85,6 +101,8 @@ PARSERS = {
     ATTR_CPCTMAX : cpc_filename_parser,
     ATTR_CPCTMIN : cpc_filename_parser,
     ATTR_NDVI_INTERP : interp_filename_parser,
+    ATTR_GCVI : ndvi_filename_parser,
+    ATTR_FPAR : fpar_filename_parser,
 }
 
 VALID_PARSER_KEYS = list(PARSERS.keys())
