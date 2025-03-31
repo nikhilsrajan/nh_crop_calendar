@@ -277,7 +277,8 @@ def merge_worldcereal_products(
     ):
         _tif_filepaths = []
         for _product in products_to_merge:
-            _tif_filepaths.append(row[('tif_filepath', _product)])
+            if ('tif_filepath', _product) in row.keys():
+                _tif_filepaths.append(row[('tif_filepath', _product)])
         _merged_tif_filepath = os.path.join(merged_product_folderpath, f'{index}_{merged_product_name}.tif')
 
         if overwrite or not os.path.exists(_merged_tif_filepath):

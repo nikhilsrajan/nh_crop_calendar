@@ -16,6 +16,7 @@ CLUSTER_PATHS = {
     presets.ATTR_NSIDC: '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/nsidc/daily/',
     presets.ATTR_FPAR: '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/fpar/',
     presets.ATTR_GCVI: '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/gcvi/',
+    presets.ATTR_NDVI: '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/ndvi/'
 }
 
 
@@ -34,6 +35,7 @@ if __name__ == '__main__':
     parser.add_argument('--nsidc', action='store_true',)
     parser.add_argument('--fpar', action='store_true',)
     parser.add_argument('--gcvi', action='store_true',)
+    parser.add_argument('--ndvi', action='store_true',)
     # parser.add_argument('--interp-ndvi', help='/path/to/interp_ndvi', required=False, default=None)
     parser.add_argument('--years', help='comma separated years (YYYY). Example: 2019,2020,2018')
     parser.add_argument('--export', help='/path/to/export')
