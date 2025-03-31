@@ -75,7 +75,7 @@ if __name__ == '__main__':
             attribute_folderpath = CLUSTER_PATHS[presets.ATTR_GCVI]
         )
     if args.ndvi:
-        attribute_settings_dict[presets.ATTR_CHIRPS] = cwdc.Settings(
+        attribute_settings_dict[presets.ATTR_NDVI] = cwdc.Settings(
             attribute_folderpath = CLUSTER_PATHS[presets.ATTR_NDVI]
         )
     
