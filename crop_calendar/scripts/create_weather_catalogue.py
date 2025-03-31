@@ -12,7 +12,7 @@ CLUSTER_PATHS = {
     presets.ATTR_CHIRPS: '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/chirps/global/',
     presets.ATTR_CPCTMAX: '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/cpc_tmax/',
     presets.ATTR_CPCTMIN: '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/cpc_tmin/',
-    presets.ATTR_ESI4WK: '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/chirps/esi_4wk/',
+    presets.ATTR_ESI4WK: '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/esi_4wk/',
     presets.ATTR_NSIDC: '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/nsidc/daily/',
     presets.ATTR_FPAR: '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/fpar/',
     presets.ATTR_GCVI: '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/gcvi/',
