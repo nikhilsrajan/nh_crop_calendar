@@ -78,7 +78,7 @@ def fpar_filename_parser(filename:str):
     date_str = filename.split('_')[-1].split('.')[0]
     date = datetime.datetime.strptime(date_str, '%Y%m%d')
     year = date.year
-    day = (datetime.datetime(year, 1, 1) - date).days + 1
+    day = (date - datetime.datetime(year, 1, 1)).days + 1
     return {
         YEAR: year,
         DAY: day,
