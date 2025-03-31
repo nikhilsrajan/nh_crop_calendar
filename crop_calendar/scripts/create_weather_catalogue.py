@@ -74,10 +74,14 @@ if __name__ == '__main__':
         attribute_settings_dict[presets.ATTR_GCVI] = cwdc.Settings(
             attribute_folderpath = CLUSTER_PATHS[presets.ATTR_GCVI]
         )
+    if args.ndvi:
+        attribute_settings_dict[presets.ATTR_CHIRPS] = cwdc.Settings(
+            attribute_folderpath = CLUSTER_PATHS[presets.ATTR_NDVI]
+        )
     
     weather_catalogue_df = cwdc.create_weather_data_catalogue_df(
         years = years,
         attribute_settings_dict = attribute_settings_dict
     )
 
-    weather_catalogue_df.to_csv(args.export)
+    weather_catalogue_df.to_csv(args.export, index=False)
