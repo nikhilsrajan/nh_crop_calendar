@@ -281,6 +281,8 @@ def merge_worldcereal_products(
                 _tif_filepaths.append(row[('tif_filepath', _product)])
         _merged_tif_filepath = os.path.join(merged_product_folderpath, f'{index}_{merged_product_name}.tif')
 
+        _tif_filepaths = [fp for fp in _tif_filepaths if isinstance(fp, str)]
+
         if overwrite or not os.path.exists(_merged_tif_filepath):
             with rasterio.open(_tif_filepaths[0]) as ref:
                 out_meta = ref.meta.copy()
@@ -596,8 +598,9 @@ def resample_worldcereal_cropmasks(
 
 
 if __name__ == '__main__':
-    bounding_filepath = '../../data/outputs/france_modis_bounding.geojson'
-    aez_geojson_filepath = '../../data/worldcereal/WorldCereal_AEZ.geojson'
+    # bounding_filepath = '../../data/outputs/france_modis_bounding.geojson'
+    bounding_filepath = '/gpfs/data1/cmongp2/sasirajann/nh_crop_calendar/crop_calendar/data/outputs/Malawi/mwi_adm_nso_hotosm_20230405_shp/mwi_admbnda_adm0_nso_hotosm_20230405.shp'
+    aez_geojson_filepath = '/gpfs/data1/cmongp2/sasirajann/nh_crop_calendar/crop_calendar/data/worldcereal/WorldCereal_AEZ.geojson'
     reference_geotiff = '../../data/GEOGLAM-BACS_v1.0.0/Percent_Spring_Wheat.tif'
 
     worldcereal_folderpath = '../../data/worldcereal/'

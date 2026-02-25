@@ -11,6 +11,8 @@ DAY = 'day'
 # f'{attribute}_{year}_{day}.tif' used in spatially_interpolate_files.py
 ATTR_NDVI = 'ndvi'
 ATTR_NSIDC = 'nsidc'
+ATTR_NSIDC_SURFACE = 'nsidc-surface'
+ATTR_NSIDC_ROOTZONE = 'nsidc-rootzone'
 ATTR_CHIRPS = 'chirps'
 ATTR_ESI4WK = 'esi-4wk'
 ATTR_CPCTMAX = 'cpc-tmax'
@@ -96,6 +98,8 @@ def ndvi_denormalise(x):
 PARSERS = {
     ATTR_NDVI : ndvi_filename_parser,
     ATTR_NSIDC : soilmoisture_filename_parser,
+    ATTR_NSIDC_SURFACE : soilmoisture_filename_parser,
+    ATTR_NSIDC_ROOTZONE : soilmoisture_filename_parser,
     ATTR_CHIRPS : chirps_filename_parser,
     ATTR_ESI4WK : esi4wk_filename_parser,
     ATTR_CPCTMAX : cpc_filename_parser,

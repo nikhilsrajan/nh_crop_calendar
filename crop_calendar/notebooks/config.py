@@ -2,13 +2,19 @@ import os
 
 
 # JOB_NAME = 'France'
-JOB_NAME = 'south-east-africa'
+# JOB_NAME = 'south-east-africa'
+# JOB_NAME = 'Malawi'
+# JOB_NAME = 'sub-saharan-africa'
+JOB_NAME = 'kenya'
 
 # paths
 FOLDERPATH_DATA = '../data'
 
 # FILEPATH_ROI_SHAPE = os.path.join(FOLDERPATH_DATA, 'shapefiles/France_Regions.gpkg')
-FILEPATH_ROI_SHAPE = os.path.join(FOLDERPATH_DATA, 'shapefiles/bounds-2012-01-01-nc.geojson')
+# FILEPATH_ROI_SHAPE = os.path.join(FOLDERPATH_DATA, 'shapefiles/bounds-2012-01-01-nc.geojson')
+# FILEPATH_ROI_SHAPE = '/gpfs/data1/cmongp2/sasirajann/nh_crop_calendar/crop_calendar/data/outputs/Malawi/mwi_adm_nso_hotosm_20230405_shp/mwi_admbnda_adm0_nso_hotosm_20230405.shp'
+# FILEPATH_ROI_SHAPE = '/gpfs/data1/cmongp2/sasirajann/nh_crop_calendar/crop_calendar/data/shapefiles/AfSP012Qry_ISRIC/GIS_Shape/AfSP012Qry_SubSaharanAfrica.shp'
+FILEPATH_ROI_SHAPE = '/gpfs/data1/cmongp2/sasirajann/nh_crop_calendar/crop_calendar/data/shapefiles/ken_admin0.geojson'
 
 
 FOLDERPATH_OUTPUTS = os.path.join(FOLDERPATH_DATA, f'outputs/{JOB_NAME}')
@@ -22,7 +28,7 @@ FOLDERPATH_CLUSTERFILES_NDVI = os.path.join(FOLDERPATH_DATA, 'cluster_files/ndvi
 FOLDERPATH_CLUSTERFILES_NSIDC = os.path.join(FOLDERPATH_DATA, 'cluster_files/nsidc')
 FOLDERPATH_CHC_CHIRP_V2P0_P05 = os.path.join(FOLDERPATH_DATA, 'chc/chirps-v2.0/p05')
 
-FOLDERPATH_WORLDCEREAL = os.path.join(FOLDERPATH_DATA, 'worldcereal')
+FOLDERPATH_WORLDCEREAL = os.path.join(FOLDERPATH_DATA, 'WorldCereal')
 FILEPATH_WORLDCEREAL_AEZ = os.path.join(FOLDERPATH_WORLDCEREAL, 'WorldCereal_AEZ.geojson')
 FILEPATH_REFERENCE_GEOTIFF = os.path.join(FOLDERPATH_DATA, 'ref_mod09.ndvi.global_0.05_degree.2019.001.c6.v1.tif')
 

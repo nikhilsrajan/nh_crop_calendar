@@ -14,6 +14,8 @@ CLUSTER_PATHS = {
     presets.ATTR_CPCTMIN: '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/cpc_tmin/',
     presets.ATTR_ESI4WK: '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/esi_4wk/',
     presets.ATTR_NSIDC: '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/nsidc/daily/',
+    presets.ATTR_NSIDC_SURFACE: '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/nsidc/daily/surface/',
+    presets.ATTR_NSIDC_ROOTZONE: '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/nsidc/daily/rootzone/',
     presets.ATTR_FPAR: '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/fpar/',
     presets.ATTR_GCVI: '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/gcvi/',
     presets.ATTR_NDVI: '/gpfs/data1/cmongp1/GEOGLAM/Input/intermed/ndvi/'
@@ -32,7 +34,8 @@ if __name__ == '__main__':
     parser.add_argument('--cpctmax', action='store_true',)
     parser.add_argument('--cpctmin', action='store_true',)
     parser.add_argument('--esi4wk', action='store_true',)
-    parser.add_argument('--nsidc', action='store_true',)
+    parser.add_argument('--nsidc-surface', action='store_true',)
+    parser.add_argument('--nsidc-rootzone', action='store_true',)
     parser.add_argument('--fpar', action='store_true',)
     parser.add_argument('--gcvi', action='store_true',)
     parser.add_argument('--ndvi', action='store_true',)
@@ -62,9 +65,13 @@ if __name__ == '__main__':
         attribute_settings_dict[presets.ATTR_ESI4WK] = cwdc.Settings(
             attribute_folderpath = CLUSTER_PATHS[presets.ATTR_ESI4WK]
         )
-    if args.nsidc:
-        attribute_settings_dict[presets.ATTR_NSIDC] = cwdc.Settings(
-            attribute_folderpath = CLUSTER_PATHS[presets.ATTR_NSIDC]
+    if args.nsidc_surface:
+        attribute_settings_dict[presets.ATTR_NSIDC_SURFACE] = cwdc.Settings(
+            attribute_folderpath = CLUSTER_PATHS[presets.ATTR_NSIDC_SURFACE]
+        )
+    if args.nsidc_surface:
+        attribute_settings_dict[presets.ATTR_NSIDC_ROOTZONE] = cwdc.Settings(
+            attribute_folderpath = CLUSTER_PATHS[presets.ATTR_NSIDC_ROOTZONE]
         )
     if args.fpar:
         attribute_settings_dict[presets.ATTR_FPAR] = cwdc.Settings(

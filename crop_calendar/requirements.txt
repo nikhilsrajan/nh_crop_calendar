@@ -8,3 +8,5 @@ s2
 scikit-learn
 scikit-gstat
 xarray
+rioxarray
+netCDF4
